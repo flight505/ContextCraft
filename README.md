@@ -25,16 +25,86 @@ ContextCraft is a desktop application designed to help developers easily format 
 - 📊 **Token Counting**: Track token usage to stay within AI model limits
 - 📋 **One-Click Copy**: Easily copy formatted output to clipboard
 
+## Features in Detail
+
+### 🎯 Smart Prompt Management
+- **Built-in Templates**: Pre-configured prompts for common use cases like code review, bug fixing, and feature implementation
+- **Custom Instructions**: Create and save your own prompt templates with placeholders for dynamic content
+- **Context Variables**: Use variables like `{selected_files}`, `{file_tree}`, and `{custom_notes}` in your prompts
+- **Preview Mode**: Real-time preview of how your prompt will look with the current selection
+
+### 🌳 File Tree Visualization
+- **Multiple View Modes**:
+  - `None`: Clean output without directory structure
+  - `Selected`: Show only chosen files in tree view
+  - `Selected with Roots`: Display selected files with their parent directories
+  - `Complete`: Full project structure visualization
+- **Smart Path Display**: Automatically collapses long paths for better readability
+- **Interactive Navigation**: Click to expand/collapse directories
+- **Search & Filter**: Quickly find files with fuzzy search and pattern matching
+
+### 📊 AI Model Integration
+- **Token Management**:
+  - Real-time token counting for selected content
+  - Visual indicators for context limit warnings
+  - Support for multiple models (GPT-3.5, GPT-4, Claude, etc.)
+  - Automatic content optimization suggestions when approaching limits
+- **Model-Specific Features**:
+  - Customizable context windows per model
+  - Token budget allocation for responses
+  - Smart content truncation to fit model limits
+
+### ⚡ Code Optimization Tools
+- **Smart Compression**:
+  - Intelligent whitespace reduction
+  - Comment density optimization
+  - Import statement consolidation
+  - Unused code detection
+- **Content Filtering**:
+  - Selective comment removal
+  - Docstring preservation options
+  - Keep/remove TODO markers
+  - License and copyright notice handling
+- **Format Controls**:
+  - Preserve or strip markdown formatting
+  - Code block style options
+  - Line number inclusion toggle
+  - Syntax highlighting preferences
+
+### 🔧 Advanced Configuration
+- **Ignore Patterns**:
+  - GitIgnore-style pattern support
+  - Custom exclusion rules
+  - Directory-specific settings
+  - Binary file handling
+- **Output Formatting**:
+  - Customizable indentation
+  - Line ending normalization
+  - Character encoding options
+  - Maximum line length control
+
+### 💾 Session Management
+- **Workspace Memory**:
+  - Auto-save selected files
+  - Restore previous sessions
+  - Multiple workspace support
+  - Custom workspace naming
+- **Export Options**:
+  - Copy to clipboard
+  - Save as markdown
+  - Export as formatted text
+  - Generate shareable links
+
 ## Installation
 
 ### Windows
-Download the latest `.exe` installer from the [Releases](https://github.com/flight505/contextcraft/releases) page
+Download the latest `.exe` installer from the [Releases](https://github.com/flight505/ContextCraft/releases) page
 
 ### macOS
-Download the latest `.dmg` file from the [Releases](https://github.com/flight505/contextcraft/releases) page
+Download the latest `.dmg` file from the [Releases](https://github.com/flight505/ContextCraft/releases) page
 
 ### Linux
-Download the AppImage from the [Releases](https://github.com/flight505/contextcraft/releases) page
+Download the AppImage from the [Releases](https://github.com/flight505/ContextCraft/releases) page
 
 ## Quick Start
 
@@ -53,8 +123,8 @@ Download the AppImage from the [Releases](https://github.com/flight505/contextcr
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/flight505/contextcraft.git
-cd contextcraft
+git clone https://github.com/flight505/ContextCraft.git
+cd ContextCraft
 
 # Install dependencies
 npm install

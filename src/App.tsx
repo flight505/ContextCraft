@@ -1665,7 +1665,7 @@ const App = () => {
             <div className={styles.headerSeparator}></div> */}
             <ThemeToggle />
             <div className={styles.headerSeparator}></div>
-            <a href="https://github.com/jsulpis/pastemax" target="_blank" rel="noopener noreferrer" className={styles.githubButton}>
+            <a href="https://github.com/flight505/ContextCraft" target="_blank" rel="noopener noreferrer" className={styles.githubButton}>
               <Github size={16} />
             </a>
           </div>
