@@ -134,6 +134,26 @@ contextBridge.exposeInMainWorld("electron", {
     }
     return Promise.reject(new Error('Invalid channel: get-file-metadata'));
   },
+  
+  // Add file processing status listener
+  onFileProcessingStatus: (callback) => {
+    if (!callback || typeof callback !== 'function') {
+      console.error('Invalid callback provided to onFileProcessingStatus');
+      return;
+    }
+    
+    // Use the standard pattern used by other listeners
+    if (VALID_CHANNELS.receive.includes('file-processing-status')) {
+      ipcRenderer.removeAllListeners('file-processing-status');
+      ipcRenderer.on('file-processing-status', (event, statusData) => {
+        try {
+          callback(statusData);
+        } catch (err) {
+          console.error('Error in file processing status callback:', err);
+        }
+      });
+    }
+  },
 
   // Keep the generic ipcRenderer object for potential backward compatibility or other uses
   // BUT favor using the specific methods above for better code clarity.

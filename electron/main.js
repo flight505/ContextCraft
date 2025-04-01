@@ -1849,6 +1849,21 @@ function setupFileWatcher(folderPath, window) {
     fileWatcher = null;
   }
 
+  // Close all existing watchers if we're maintaining an array of them
+  if (global.allWatchers && Array.isArray(global.allWatchers)) {
+    console.log(`Closing ${global.allWatchers.length} existing watchers`);
+    global.allWatchers.forEach(w => {
+      try {
+        w.close();
+      } catch (err) {
+        // Ignore errors when closing
+      }
+    });
+    global.allWatchers = [];
+  } else {
+    global.allWatchers = [];
+  }
+
   if (!folderPath || !window || !isWindowValid(window)) {
     console.log("Cannot setup file watcher: missing dependencies");
     return;
@@ -1863,6 +1878,12 @@ function setupFileWatcher(folderPath, window) {
     
     // Create ignored function for filtering
     const isIgnored = (watchPath) => {
+      // Check for empty or invalid paths
+      if (!watchPath || typeof watchPath !== 'string' || watchPath.trim() === '') {
+        console.warn(`Attempted to check an empty or invalid path for ignoring. Treating as not ignored.`);
+        return false; // Don't ignore empty paths
+      }
+      
       // Always ignore node_modules and other large directories
       if (watchPath.includes('node_modules') || 
           watchPath.includes('.git') || 
@@ -1878,6 +1899,12 @@ function setupFileWatcher(folderPath, window) {
         // Convert absolute path to relative path
         const relativePath = path.relative(normalizedFolderPath, normalizedWatchPath);
         
+        // Check that relativePath is not empty before passing to ignores()
+        if (!relativePath || relativePath.trim() === '') {
+          console.warn(`Empty relative path generated from: ${watchPath}. Treating as not ignored.`);
+          return false;
+        }
+        
         // Now pass the relative path to ignores()
         return ig.ignores(relativePath);
       } catch (err) {
@@ -1890,58 +1917,88 @@ function setupFileWatcher(folderPath, window) {
     if (chokidar && typeof chokidar.watch === 'function' && 
         chokidar.watch.toString().includes('function')) {
       // Start watching the folder with appropriate options using chokidar
-      fileWatcher = chokidar.watch(folderPath, {
-        ignored: isIgnored,
-        persistent: true,
-        ignoreInitial: true, // Don't fire events for existing files
-        awaitWriteFinish: {
-          stabilityThreshold: 500, // Wait 500ms after last change
-          pollInterval: 100 // Poll every 100ms
-        },
-        depth: 10, // Set a reasonable depth limit
-        useFsEvents: true // Use native filesystem events if available
-      });
-
-      // Set up event handlers with debouncing to avoid too many updates
-      let addDebounce = null;
-      let changeDebounce = null;
-      let deleteDebounce = null;
-
-      fileWatcher
-        .on('add', path => {
-          if (addDebounce) clearTimeout(addDebounce);
-          addDebounce = setTimeout(() => {
-            console.log(`File added (raw path): ${path}`);
-            // Ensure consistent path format
-            const normalizedPath = normalizePath(path);
-            safeRendererSend(window, 'file-changed', { type: 'add', path: normalizedPath });
-            // Note: Chokidar automatically watches new directories
-          }, WATCH_DEBOUNCE_TIME);
-        })
-        .on('change', path => {
-          if (changeDebounce) clearTimeout(changeDebounce);
-          changeDebounce = setTimeout(() => {
-            console.log(`File changed (raw path): ${path}`);
-            // Ensure consistent path format
-            const normalizedPath = normalizePath(path);
-            safeRendererSend(window, 'file-changed', { type: 'change', path: normalizedPath });
-          }, WATCH_DEBOUNCE_TIME);
-        })
-        .on('unlink', path => {
-          if (deleteDebounce) clearTimeout(deleteDebounce);
-          deleteDebounce = setTimeout(() => {
-            console.log(`File deleted (raw path): ${path}`);
-            // Ensure consistent path format
-            const normalizedPath = normalizePath(path);
-            safeRendererSend(window, 'file-changed', { type: 'delete', path: normalizedPath });
-          }, WATCH_DEBOUNCE_TIME);
-        })
-        .on('error', error => {
-          console.error(`File watcher error: ${error}`);
+      try {
+        console.log("Using chokidar for file watching with optimized settings");
+        fileWatcher = chokidar.watch(folderPath, {
+          ignored: [
+            isIgnored,
+            /(^|[\/\\])\../, // Ignore dotfiles
+            '**/node_modules/**',
+            '**/.git/**'
+          ],
+          persistent: true,
+          ignoreInitial: true, // Don't fire events for existing files
+          awaitWriteFinish: {
+            stabilityThreshold: 500, // Wait 500ms after last change
+            pollInterval: 100 // Poll every 100ms
+          },
+          depth: 5, // Limit watch depth to 5 levels to prevent excessive watchers
+          useFsEvents: true, // Use native filesystem events if available
+          alwaysStat: false, // Don't get stats for all files (performance)
+          usePolling: false // Don't use polling (uses more CPU)
         });
+
+        // Set up event handlers with debouncing to avoid too many updates
+        let addDebounce = null;
+        let changeDebounce = null;
+        let deleteDebounce = null;
+
+        fileWatcher
+          .on('add', path => {
+            if (addDebounce) clearTimeout(addDebounce);
+            addDebounce = setTimeout(() => {
+              console.log(`File added (raw path): ${path}`);
+              // Ensure consistent path format
+              const normalizedPath = normalizePath(path);
+              safeRendererSend(window, 'file-changed', { type: 'add', path: normalizedPath });
+            }, WATCH_DEBOUNCE_TIME);
+          })
+          .on('change', path => {
+            if (changeDebounce) clearTimeout(changeDebounce);
+            changeDebounce = setTimeout(() => {
+              console.log(`File changed (raw path): ${path}`);
+              // Ensure consistent path format
+              const normalizedPath = normalizePath(path);
+              safeRendererSend(window, 'file-changed', { type: 'change', path: normalizedPath });
+            }, WATCH_DEBOUNCE_TIME);
+          })
+          .on('unlink', path => {
+            if (deleteDebounce) clearTimeout(deleteDebounce);
+            deleteDebounce = setTimeout(() => {
+              console.log(`File deleted (raw path): ${path}`);
+              // Ensure consistent path format
+              const normalizedPath = normalizePath(path);
+              safeRendererSend(window, 'file-changed', { type: 'delete', path: normalizedPath });
+            }, WATCH_DEBOUNCE_TIME);
+          })
+          .on('error', error => {
+            // Handle errors specifically
+            if (error.code === 'EMFILE') {
+              console.error('Too many files to watch! Some changes may not be detected.');
+              console.error('You can increase the limit with: ulimit -n <number> (macOS/Linux)');
+              safeRendererSend(window, 'file-processing-status', {
+                status: 'warning',
+                message: 'Too many files to watch. Some changes may not be detected.'
+              });
+            } else {
+              console.error(`File watcher error: ${error}`);
+            }
+          });
+          
+        console.log("Chokidar file watcher set up successfully");
+      } catch (err) {
+        console.error(`Error setting up chokidar watcher: ${err}`);
+        // Fall back to fs.watch on chokidar failure
+        useFsWatchFallback();
+      }
     } else {
       // Fall back to native fs.watch
-      console.log("Using native fs.watch fallback for file watching");
+      useFsWatchFallback();
+    }
+    
+    // Function for using fs.watch as a fallback
+    function useFsWatchFallback() {
+      console.log("Using optimized native fs.watch fallback for file watching");
       
       // This will store all the watchers we create
       const watchers = [];
@@ -1949,13 +2006,67 @@ function setupFileWatcher(folderPath, window) {
       let deleteDebounce = null;
       let changeDebounce = null;
       
+      // Create a watcher manager to handle errors and limits
+      const watcherManager = {
+        // Track the number of watchers and depth
+        count: 0,
+        // Maximum number of watchers to create
+        MAX_WATCHERS: 1000,
+        // Maximum directory depth to watch
+        MAX_DEPTH: 4,
+        
+        // Add a watcher if we haven't hit the limit
+        addWatcher: function(watcher) {
+          if (this.count >= this.MAX_WATCHERS) {
+            console.warn(`Reached maximum watcher limit (${this.MAX_WATCHERS}). Some changes may not be detected.`);
+            return false;
+          }
+          
+          watchers.push(watcher);
+          global.allWatchers.push(watcher); // Also add to global tracker
+          this.count++;
+          return true;
+        },
+        
+        // Check if we can add more watchers
+        canAddWatchers: function() {
+          return this.count < this.MAX_WATCHERS;
+        }
+      };
+      
       // Function to watch a directory and its subdirectories
-      const watchDirectory = (dir) => {
-        if (isIgnored(dir)) return;
+      const watchDirectory = (dir, depth = 0) => {
+        // Validate directory path before proceeding
+        if (!dir || typeof dir !== 'string' || dir.trim() === '') {
+          console.warn('Attempted to watch an empty or invalid directory path. Skipping.');
+          return;
+        }
+        
+        // Check depth limit to avoid excessive recursion
+        if (depth > watcherManager.MAX_DEPTH) {
+          console.log(`Reached maximum watch depth (${watcherManager.MAX_DEPTH}) for ${dir}. Skipping deeper directories.`);
+          return;
+        }
+        
+        // Check if we should ignore this directory
+        if (isIgnored(dir)) {
+          return;
+        }
+        
+        // Check if we've hit the watcher limit
+        if (!watcherManager.canAddWatchers()) {
+          return;
+        }
         
         try {
           // Watch the current directory
           const watcher = safeFsWatch(dir, (eventType, filename) => {
+            // Validate filename before using it
+            if (!filename || typeof filename !== 'string' || filename.trim() === '') {
+              console.warn(`Received empty or invalid filename in watcher event for ${dir}. Skipping.`);
+              return;
+            }
+            
             const fullPath = path.join(dir, filename);
             
             // Skip ignored files/directories
@@ -1976,9 +2087,9 @@ function setupFileWatcher(folderPath, window) {
                     const normalizedPath = normalizePath(fullPath);
                     safeRendererSend(window, 'file-changed', { type: 'add', path: normalizedPath });
                     
-                    // If it's a directory, watch it too
-                    if (stats.isDirectory()) {
-                      watchDirectory(fullPath);
+                    // If it's a directory, watch it too (but respect depth limit)
+                    if (stats.isDirectory() && depth < watcherManager.MAX_DEPTH) {
+                      watchDirectory(fullPath, depth + 1);
                     }
                   }, WATCH_DEBOUNCE_TIME);
                 } else {
@@ -2006,16 +2117,36 @@ function setupFileWatcher(folderPath, window) {
             }
           });
           
-          watchers.push(watcher);
+          // Add to our tracked watchers
+          if (watcher && watcherManager.addWatcher(watcher)) {
+            if (depth === 0) {
+              console.log(`Set up root watcher for ${dir}`);
+            }
+          }
           
-          // Recursively watch subdirectories
+          // Recursively watch subdirectories (with depth limit)
           try {
-            const entries = fs.readdirSync(dir, { withFileTypes: true });
-            for (const entry of entries) {
-              if (entry.isDirectory()) {
+            if (watcherManager.canAddWatchers()) {
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+              // Process only directories
+              const directories = entries.filter(entry => entry.isDirectory());
+              
+              // Limit the number of directories to watch at each level
+              const MAX_DIRS_PER_LEVEL = 50;
+              if (directories.length > MAX_DIRS_PER_LEVEL) {
+                console.log(`Limiting subdirectory watching to ${MAX_DIRS_PER_LEVEL} at ${dir}`);
+                directories.length = MAX_DIRS_PER_LEVEL;
+              }
+              
+              for (const entry of directories) {
+                if (!watcherManager.canAddWatchers()) {
+                  console.log(`Reached watcher limit. Stopping directory traversal at ${dir}`);
+                  break;
+                }
+                
                 const subDir = path.join(dir, entry.name);
                 if (!isIgnored(subDir)) {
-                  watchDirectory(subDir);
+                  watchDirectory(subDir, depth + 1);
                 }
               }
             }
@@ -2023,7 +2154,16 @@ function setupFileWatcher(folderPath, window) {
             console.error(`Error reading directory ${dir}:`, err);
           }
         } catch (err) {
-          console.error(`Error setting up watcher for ${dir}:`, err);
+          // Handle EMFILE error specifically
+          if (err.code === 'EMFILE') {
+            console.error('Too many open files. No more watchers will be created.');
+            safeRendererSend(window, 'file-processing-status', {
+              status: 'warning',
+              message: 'Too many files to watch. Some changes may not be detected.'
+            });
+          } else {
+            console.error(`Error setting up watcher for ${dir}:`, err);
+          }
         }
       };
       
@@ -2040,13 +2180,21 @@ function setupFileWatcher(folderPath, window) {
               console.error("Error closing watcher:", err);
             }
           });
+          console.log(`Closed ${watchers.length} watchers`);
         }
       };
+      
+      console.log(`Native fs.watch fallback set up with ${watchers.length} watchers`);
     }
 
     console.log("File watcher set up successfully");
   } catch (error) {
     console.error("Error setting up file watcher:", error);
+    // Notify the renderer of the error
+    safeRendererSend(window, 'file-processing-status', {
+      status: 'error',
+      message: `Error setting up file watcher: ${error.message}`
+    });
   }
 }
 

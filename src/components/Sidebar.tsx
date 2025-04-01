@@ -8,6 +8,7 @@ import { Button } from "./ui";
 import SearchBar from "./SearchBar";
 import styles from "./Sidebar.module.css";
 import { ModelInfo } from "../types/ModelTypes";
+import { StatusAlert } from "./ui/StatusAlert";
 
 // Extend the existing SidebarProps from FileTypes
 interface ExtendedSidebarProps extends SidebarProps {
@@ -98,6 +99,10 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
   const isBuildingTreeRef = useRef(false);
   const buildTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedFilesRef = useRef<string[]>([]);
+  const [watcherStatus, setWatcherStatus] = useState<{ status: string | null, message: string | null }>({ 
+    status: null, 
+    message: null 
+  });
 
   // Cache the previous selected files to optimize render
   useEffect(() => {
@@ -538,8 +543,22 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
     setIgnoreModalOpen(false);
   }, []);
 
+  // Add effect for listening to file processing status events
+  useEffect(() => {
+    // Setup handler for file processing status messages
+    const handleFileProcessingStatus = (statusData: { status: string, message: string }) => {
+      console.log("File processing status:", statusData);
+      setWatcherStatus(statusData);
+    };
+
+    // Subscribe to file processing status events
+    window.electron.onFileProcessingStatus(handleFileProcessingStatus);
+
+    // No cleanup needed since we're using the main electron API object
+  }, []);
+
   return (
-    <div className={styles.sidebar} style={{ width: `${sidebarWidth}px` }}>
+    <div className={styles.sidebar} style={{ width: `${sidebarWidth}px` }} data-testid="sidebar">
       <FileTreeHeader 
         onOpenFolder={openFolder}
         onSortChange={handleSortChange}
@@ -635,6 +654,15 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
         systemIgnorePatterns={systemIgnorePatterns}
         recentFolders={getAvailableFolders()}
       />
+
+      {/* Add status alert for watcher warnings */}
+      {watcherStatus.status === 'warning' && watcherStatus.message && (
+        <StatusAlert 
+          status="error" 
+          message={watcherStatus.message} 
+          autoDismissTime={10000} 
+        />
+      )}
     </div>
   );
 };
