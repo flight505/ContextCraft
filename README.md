@@ -47,7 +47,7 @@ ContextCraft is a desktop application designed to help developers easily format 
 - **Token Management**:
   - Real-time token counting for selected content
   - Visual indicators for context limit warnings
-  - Support for multiple models (GPT-3.5, GPT-4, Claude, etc.)
+  - Support for 290 models (GPT-4, o3, o1-pro, Claude 3.5 - 3.7, etc.)
   - Automatic content optimization suggestions when approaching limits
 - **Model-Specific Features**:
   - Customizable context windows per model
@@ -97,14 +97,9 @@ ContextCraft is a desktop application designed to help developers easily format 
 
 ## Installation
 
-### Windows
-Download the latest `.exe` installer from the [Releases](https://github.com/flight505/ContextCraft/releases) page
-
 ### macOS
 Download the latest `.dmg` file from the [Releases](https://github.com/flight505/ContextCraft/releases) page
 
-### Linux
-Download the AppImage from the [Releases](https://github.com/flight505/ContextCraft/releases) page
 
 ## Quick Start
 
