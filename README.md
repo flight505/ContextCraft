@@ -1,7 +1,7 @@
 # ContextCraft
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/db863f93-a022-47b8-bfe2-e8dfe4c0fcc1" alt="ContextCraft Logo" width="180">
+  <img src="https://github.com/user-attachments/assets/ecd72a53-65be-4175-9a03-2cf141948dae" alt="ContextCraft Logo" width="180">
   <p>A powerful code formatter and exporter for sharing code with AI models.</p>
 </div>
 
