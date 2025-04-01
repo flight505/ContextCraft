@@ -14,8 +14,6 @@ import { Button } from "./components/ui/Button";
 import { getSortIcon } from "./utils/sortIcons";
 // Import utilities from patternUtils
 import { SYSTEM_PATTERN_CATEGORIES, parseIgnorePatternsContent, IgnorePatternsState } from "./utils/patternUtils";
-// Import the StatusAlert component
-import { StatusAlert } from "./components/ui/StatusAlert";
 import { OutputFormatType, OUTPUT_FORMAT_STORAGE_KEY } from './constants/outputFormats';
 import { formatAsXML, formatAsMarkdown, formatAsPlain, FileContent } from './utils/formatters';
 import { UserInstructionsWithTemplates } from './components/UserInstructionsWithTemplates';
@@ -1546,102 +1544,29 @@ const App = () => {
     }));
   }, []);
 
-  // Define this ref outside of useEffect
-  const processingToastIds = useRef<{[key: string]: string | number}>({});
-  const fileOperationRef = useRef<{inProgress: boolean}>({ inProgress: false });
-
-  // Update processing status handlers to include setTimeout for complete status
+  const processingToastIds = useRef<Record<string, string>>({});
+  const fileOperationRef = useRef<{ inProgress: boolean }>({ inProgress: false });
+  
+  // Processing status effect - show toast notifications instead of StatusAlert
   useEffect(() => {
-    // Group related file operations (loading, finding, processing) into a single toast
-    const isFileOperation = processingStatus.message.includes('file') || 
-                            processingStatus.message.includes('File') ||
-                            processingStatus.message.includes('folder') ||
-                            processingStatus.message.includes('Folder');
-    
     if (processingStatus.status === 'processing') {
-      // For file operations, update a single toast instead of creating multiple
-      if (isFileOperation) {
-        // If we have an existing file operation toast, dismiss it
-        if (processingToastIds.current['file-operation']) {
-          toast.dismiss(processingToastIds.current['file-operation']);
-        }
-        
-        // Create/update the file operation toast
-        fileOperationRef.current.inProgress = true;
-        processingToastIds.current['file-operation'] = showToast.info('Processing', { 
-          description: processingStatus.message 
-        });
-      } else {
-        // For other processing operations, create separate toasts
-        if (processingToastIds.current['processing']) {
-          toast.dismiss(processingToastIds.current['processing']);
-        }
-        
-        processingToastIds.current['processing'] = showToast.info('Processing', { 
-          description: processingStatus.message 
-        });
-      }
+      // For processing status
+      showToast.fileLoading(processingStatus.message);
     } 
-    // Handle completion status
     else if (processingStatus.status === 'complete') {
-      // For file operations, only show one completion toast for the entire operation
-      if (isFileOperation) {
-        // Dismiss the file operation processing toast
-        if (processingToastIds.current['file-operation']) {
-          toast.dismiss(processingToastIds.current['file-operation']);
-          processingToastIds.current['file-operation'] = '';
-        }
-        
-        // Only show completion toast if this is the final step of a file operation
-        // Avoid showing "Found X files" followed immediately by "Loaded X files"
-        if (fileOperationRef.current.inProgress && 
-            (processingStatus.message.includes('Loaded') || !processingToastIds.current['file-complete'])) {
-          
-          // Reset the file operation flag since we're done
-          fileOperationRef.current.inProgress = false;
-          processingToastIds.current['file-complete'] = showToast.success(processingStatus.message);
-          
-          // Clear the file completion toast ID after a delay
-          setTimeout(() => {
-            processingToastIds.current['file-complete'] = '';
-          }, 5000);
-        }
-      } else {
-        // For other types of completion, dismiss related processing toast
-        if (processingToastIds.current['processing']) {
-          toast.dismiss(processingToastIds.current['processing']);
-          processingToastIds.current['processing'] = '';
-        }
-        
-        processingToastIds.current['complete'] = showToast.success(processingStatus.message);
-      }
+      // For completion status
+      showToast.fileComplete(processingStatus.message);
       
+      // Auto-reset to idle after a delay
       const timer = setTimeout(() => {
         setProcessingStatus({ status: 'idle', message: '' });
       }, 5000);
       
       return () => clearTimeout(timer);
-    } 
-    // Handle error status
+    }
     else if (processingStatus.status === 'error') {
-      // Dismiss any existing processing toasts
-      if (processingToastIds.current['processing']) {
-        toast.dismiss(processingToastIds.current['processing']);
-        processingToastIds.current['processing'] = '';
-      }
-      
-      if (processingToastIds.current['file-operation']) {
-        toast.dismiss(processingToastIds.current['file-operation']);
-        processingToastIds.current['file-operation'] = '';
-      }
-      
-      // Reset file operation flag
-      fileOperationRef.current.inProgress = false;
-      
-      // Show error toast
-      processingToastIds.current['error'] = showToast.error('Error', { 
-        description: processingStatus.message 
-      });
+      // For error status
+      showToast.fileError(processingStatus.message);
     }
   }, [processingStatus.status, processingStatus.message]);
 
@@ -1766,13 +1691,7 @@ const App = () => {
               </div>
             </header>
 
-            {processingStatus.status !== 'idle' && (
-              <StatusAlert
-                status={processingStatus.status}
-                message={processingStatus.message}
-                onClose={() => setProcessingStatus({ status: 'idle', message: '' })}
-              />
-            )}
+            {/* Remove StatusAlert in favor of Toast notifications */}
 
             <div className={styles.mainContainer}>
               <Sidebar

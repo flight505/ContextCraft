@@ -8,7 +8,7 @@ import { Button } from "./ui";
 import SearchBar from "./SearchBar";
 import styles from "./Sidebar.module.css";
 import { ModelInfo } from "../types/ModelTypes";
-import { StatusAlert } from "./ui/StatusAlert";
+import { Toast, showToast } from "./ui/Toast";
 
 // Extend the existing SidebarProps from FileTypes
 interface ExtendedSidebarProps extends SidebarProps {
@@ -543,19 +543,33 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
     setIgnoreModalOpen(false);
   }, []);
 
-  // Add effect for listening to file processing status events
+  // Setup listener for file processing status updates
   useEffect(() => {
-    // Setup handler for file processing status messages
+    // Only set up listener if we're in Electron
+    if (!window.electron) return;
+
     const handleFileProcessingStatus = (statusData: { status: string, message: string }) => {
-      console.log("File processing status:", statusData);
-      setWatcherStatus(statusData);
+      if (statusData.status === 'warning' && statusData.message.includes('watcher')) {
+        setWatcherStatus({
+          status: 'warning',
+          message: statusData.message
+        });
+      }
     };
 
-    // Subscribe to file processing status events
     window.electron.onFileProcessingStatus(handleFileProcessingStatus);
-
-    // No cleanup needed since we're using the main electron API object
+    
+    return () => {
+      // No clean up needed as the API doesn't provide a way to unsubscribe
+    };
   }, []);
+
+  // Display toast for watcher warnings
+  useEffect(() => {
+    if (watcherStatus.status === 'warning' && watcherStatus.message) {
+      showToast.fileError(watcherStatus.message);
+    }
+  }, [watcherStatus.status, watcherStatus.message]);
 
   return (
     <div className={styles.sidebar} style={{ width: `${sidebarWidth}px` }} data-testid="sidebar">
@@ -654,15 +668,6 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
         systemIgnorePatterns={systemIgnorePatterns}
         recentFolders={getAvailableFolders()}
       />
-
-      {/* Add status alert for watcher warnings */}
-      {watcherStatus.status === 'warning' && watcherStatus.message && (
-        <StatusAlert 
-          status="error" 
-          message={watcherStatus.message} 
-          autoDismissTime={10000} 
-        />
-      )}
     </div>
   );
 };
