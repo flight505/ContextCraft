@@ -1,0 +1,150 @@
+.toaster {
+  position: fixed;
+  z-index: var(--z-index-tooltip);
+  width: auto;
+}
+
+.toast {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  background-color: var(--card-background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius);
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  max-width: 350px;
+  width: 100%;
+  animation-duration: 150ms;
+  transition: all 0.2s ease;
+}
+
+.title {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.toast:hover {
+  background-color: var(--card-background);
+}
+
+/* Toast types */
+.success {
+  border-left: 4px solid var(--success-color);
+}
+
+.error {
+  border-left: 4px solid var(--error-color);
+}
+
+.warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.info {
+  border-left: 4px solid var(--accent-color);
+}
+
+/* Loader */
+.loader {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-bottom-color: var(--accent-color);
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Action buttons */
+.action {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
+
+.actionButton {
+  background-color: var(--primary-button-background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0 var(--spacing-sm);
+  height: var(--button-height-sm);
+  border-radius: var(--radius);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.actionButton:hover {
+  background-color: var(--primary-button-hover);
+}
+
+.cancelButton {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0 var(--spacing-sm);
+  height: var(--button-height-sm);
+  border-radius: var(--radius);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.cancelButton:hover {
+  background-color: var(--hover-color);
+}
+
+.closeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.closeButton:hover {
+  opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .toast {
+    max-width: 100%;
+    width: calc(100% - 32px);
+  }
+} 

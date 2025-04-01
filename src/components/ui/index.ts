@@ -10,3 +10,5 @@ export { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from 
 
 // Re-export Tabs components from TabsComponents
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './TabsComponents';
+
+export * from './Toast';

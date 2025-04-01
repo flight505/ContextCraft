@@ -23,6 +23,8 @@ import { UserInstructionsWithTemplates } from './components/UserInstructionsWith
 import { fetchModels } from './utils/modelUtils';
 import { ModelInfo } from "./types/ModelTypes"; // Import the new ModelInfo type
 import { compressCode, removeComments, getLanguageFromFilename } from './utils/compressionUtils'; // Import compression utils and getLanguageFromFilename
+// Import Toast component
+import { Toast, showToast } from './components/ui/Toast';
 
 // Keys for localStorage
 const STORAGE_KEYS = {
@@ -1547,11 +1549,20 @@ const App = () => {
   useEffect(() => {
     // Handle auto-dismissing 'complete' status messages
     if (processingStatus.status === 'complete') {
+      // Show a success toast notification
+      showToast.success(processingStatus.message);
+      
       const timer = setTimeout(() => {
         setProcessingStatus({ status: 'idle', message: '' });
       }, 5000); // Use 5000ms to match StatusAlert default
       
       return () => clearTimeout(timer);
+    } else if (processingStatus.status === 'error') {
+      // Show an error toast notification
+      showToast.error('Error', processingStatus.message);
+    } else if (processingStatus.status === 'processing') {
+      // Show an info toast for processing
+      showToast.info('Processing', processingStatus.message);
     }
   }, [processingStatus.status, processingStatus.message]);
 
@@ -1657,149 +1668,156 @@ const App = () => {
   // --- Render ---
   return (
     <ThemeProvider>
-      <div className={styles.appContainer}>
-        <header className={styles.appHeader}>
-          <h1>ContextCraft</h1>
-          <div className={styles.headerActions}>
-            {/* <a href="#" className={styles.headerLink}>Guide</a>
-            <div className={styles.headerSeparator}></div> */}
-            <ThemeToggle />
-            <div className={styles.headerSeparator}></div>
-            <a href="https://github.com/flight505/ContextCraft" target="_blank" rel="noopener noreferrer" className={styles.githubButton}>
-              <Github size={16} />
-            </a>
-          </div>
-        </header>
-
-        {processingStatus.status !== 'idle' && (
-          <StatusAlert
-            status={processingStatus.status}
-            message={processingStatus.message}
-            onClose={() => setProcessingStatus({ status: 'idle', message: '' })}
-          />
-        )}
-
-        <div className={styles.mainContainer}>
-          <Sidebar
-            selectedFolder={selectedFolder}
-            openFolder={openFolder}
-            allFiles={allFiles}
-            selectedFiles={selectedFiles}
-            toggleFileSelection={toggleFileSelection}
-            toggleFolderSelection={toggleFolderSelection}
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-            selectAllFiles={selectAllFiles}
-            deselectAllFiles={deselectAllFiles}
-            expandedNodes={expandedNodes}
-            toggleExpanded={toggleExpanded}
-            reloadFolder={reloadFolder}
-            clearSelection={clearSelection}
-            removeAllFolders={removeAllFolders}
-            loadIgnorePatterns={loadIgnorePatterns}
-            saveIgnorePatterns={saveIgnorePatterns}
-            resetIgnorePatterns={resetIgnorePatterns}
-            systemIgnorePatterns={systemIgnorePatterns}
-            clearIgnorePatterns={clearLocalIgnorePatterns}
-            onClearSelectionClick={handleClearSelectionClick}
-            onRemoveAllFoldersClick={handleRemoveAllFoldersClick}
-            fileTreeSortOrder={fileTreeSortOrder}
-            onSortOrderChange={setFileTreeSortOrder}
-            globalPatternsState={globalPatternsState}
-            localPatternsState={localIgnorePatterns}
-            onExcludedSystemPatternsChange={handleExcludedSystemPatternsChange}
-            setIgnorePatterns={() => {}}
-            _availableModels={availableModels}
-            _selectedModelId={selectedModelId}
-            _onModelChange={handleModelChange}
-          />
-
-          {selectedFolder ? (
-            <div className={styles.contentArea}>
-              <div className={styles.contentHeader}>
-                <div className={styles.folderPathDisplay} title={selectedFolder}>
-                  <span className={styles.pathLabel}>{'>_'}</span> {truncatePath(selectedFolder)}
-                </div>
-                <div className={styles.headerSeparator} />
-                <div className={styles.contentActions}>
-                  <Dropdown
-                    options={sortOptions}
-                    value={sortOrder}
-                    onChange={handleSortChange}
-                    trigger={
-                      <Button variant="secondary" size="sm" startIcon={getSortIcon(sortOrder)}> Sort </Button>
-                    }
-                  />
-                </div>
-                <div className={styles.headerSeparator} />
-                <div className={styles.fileStats}>
-                  <span>{selectedFiles.length}</span> files selected (<span>{displayedTokenCount.toLocaleString()}</span> tokens)
-                </div>
+      <div className={styles.app}>
+        <Toast />
+        {/* Toast component added to make it available throughout the app */}
+        
+        {isElectron && (
+          <div className={styles.appContainer}>
+            <header className={styles.appHeader}>
+              <h1>ContextCraft</h1>
+              <div className={styles.headerActions}>
+                {/* <a href="#" className={styles.headerLink}>Guide</a>
+                <div className={styles.headerSeparator}></div> */}
+                <ThemeToggle />
+                <div className={styles.headerSeparator}></div>
+                <a href="https://github.com/flight505/ContextCraft" target="_blank" rel="noopener noreferrer" className={styles.githubButton}>
+                  <Github size={16} />
+                </a>
               </div>
-              <FileList
-                files={displayedFiles} // Pass metadata only
+            </header>
+
+            {processingStatus.status !== 'idle' && (
+              <StatusAlert
+                status={processingStatus.status}
+                message={processingStatus.message}
+                onClose={() => setProcessingStatus({ status: 'idle', message: '' })}
+              />
+            )}
+
+            <div className={styles.mainContainer}>
+              <Sidebar
+                selectedFolder={selectedFolder}
+                openFolder={openFolder}
+                allFiles={allFiles}
                 selectedFiles={selectedFiles}
                 toggleFileSelection={toggleFileSelection}
+                toggleFolderSelection={toggleFolderSelection}
+                searchTerm={searchTerm}
+                onSearchChange={handleSearchChange}
+                selectAllFiles={selectAllFiles}
+                deselectAllFiles={deselectAllFiles}
+                expandedNodes={expandedNodes}
+                toggleExpanded={toggleExpanded}
+                reloadFolder={reloadFolder}
+                clearSelection={clearSelection}
+                removeAllFolders={removeAllFolders}
+                loadIgnorePatterns={loadIgnorePatterns}
+                saveIgnorePatterns={saveIgnorePatterns}
+                resetIgnorePatterns={resetIgnorePatterns}
+                systemIgnorePatterns={systemIgnorePatterns}
+                clearIgnorePatterns={clearLocalIgnorePatterns}
+                onClearSelectionClick={handleClearSelectionClick}
+                onRemoveAllFoldersClick={handleRemoveAllFoldersClick}
+                fileTreeSortOrder={fileTreeSortOrder}
+                onSortOrderChange={setFileTreeSortOrder}
+                globalPatternsState={globalPatternsState}
+                localPatternsState={localIgnorePatterns}
+                onExcludedSystemPatternsChange={handleExcludedSystemPatternsChange}
+                setIgnorePatterns={() => {}}
+                _availableModels={availableModels}
+                _selectedModelId={selectedModelId}
+                _onModelChange={handleModelChange}
               />
 
-              {showUserInstructions && (
-                <div className={styles.userInstructionsContainer}>
-                  <UserInstructionsWithTemplates
-                    instructions={userInstructions}
-                    setInstructions={setUserInstructions}
+              {selectedFolder ? (
+                <div className={styles.contentArea}>
+                  <div className={styles.contentHeader}>
+                    <div className={styles.folderPathDisplay} title={selectedFolder}>
+                      <span className={styles.pathLabel}>{'>_'}</span> {truncatePath(selectedFolder)}
+                    </div>
+                    <div className={styles.headerSeparator} />
+                    <div className={styles.contentActions}>
+                      <Dropdown
+                        options={sortOptions}
+                        value={sortOrder}
+                        onChange={handleSortChange}
+                        trigger={
+                          <Button variant="secondary" size="sm" startIcon={getSortIcon(sortOrder)}> Sort </Button>
+                        }
+                      />
+                    </div>
+                    <div className={styles.headerSeparator} />
+                    <div className={styles.fileStats}>
+                      <span>{selectedFiles.length}</span> files selected (<span>{displayedTokenCount.toLocaleString()}</span> tokens)
+                    </div>
+                  </div>
+                  <FileList
+                    files={displayedFiles} // Pass metadata only
+                    selectedFiles={selectedFiles}
+                    toggleFileSelection={toggleFileSelection}
+                  />
+
+                  {showUserInstructions && (
+                    <div className={styles.userInstructionsContainer}>
+                      <UserInstructionsWithTemplates
+                        instructions={userInstructions}
+                        setInstructions={setUserInstructions}
+                      />
+                    </div>
+                  )}
+
+                  <ControlContainer
+                    fileTreeMode={fileTreeMode}
+                    setFileTreeMode={setFileTreeMode}
+                    showUserInstructions={showUserInstructions}
+                    setShowUserInstructions={setShowUserInstructions}
+                    getSelectedFilesContent={getSelectedFilesContent} // Now async
+                    selectedFilesCount={selectedFiles.length}
+                    outputFormat={outputFormat}
+                    setOutputFormat={setOutputFormat}
+                    availableModels={availableModels}
+                    selectedModelId={selectedModelId}
+                    onModelChange={handleModelChange}
+                    isElectron={isElectron}
+                    processingStatus={processingStatus.status}
+                    onGenerateOutput={() => {}} // Assuming generateOutput uses selected model
+                    totalTokenCount={displayedTokenCount}
+                    selectedContextLength={selectedContextLength}
+                    isCompressionEnabled={isCompressionEnabled}
+                    setIsCompressionEnabled={setIsCompressionEnabled}
+                    isCommentRemovalEnabled={isCommentRemovalEnabled}
+                    setIsCommentRemovalEnabled={setIsCommentRemovalEnabled}
+                    onRefreshModels={handleRefreshModels}
+                    // Pass new props for enhanced compression controls
+                    keepDocstrings={keepDocstrings}
+                    setKeepDocstrings={setKeepDocstrings}
+                    removeEmptyLines={removeEmptyLines}
+                    setRemoveEmptyLines={setRemoveEmptyLines}
+                    neverCompressPatterns={neverCompressPatterns}
+                    neverCompressPatternsRaw={neverCompressPatternsRaw}
+                    setNeverCompressPatternsRaw={setNeverCompressPatternsRaw}
+                    minCompressTokenThreshold={minCompressTokenThreshold}
+                    setMinCompressTokenThreshold={setMinCompressTokenThreshold}
                   />
                 </div>
+              ) : (
+                <div className={styles.contentArea}>
+                  <div className={styles.emptyStateContent}>
+                    <h2>Welcome to ContextCraft</h2>
+                    <p>Select a folder to get started.</p>
+                    <Button variant="primary" onClick={openFolder} className="mt-4"> Select Project Folder </Button>
+                  </div>
+                </div>
               )}
-
-              <ControlContainer
-                fileTreeMode={fileTreeMode}
-                setFileTreeMode={setFileTreeMode}
-                showUserInstructions={showUserInstructions}
-                setShowUserInstructions={setShowUserInstructions}
-                getSelectedFilesContent={getSelectedFilesContent} // Now async
-                selectedFilesCount={selectedFiles.length}
-                outputFormat={outputFormat}
-                setOutputFormat={setOutputFormat}
-                availableModels={availableModels}
-                selectedModelId={selectedModelId}
-                onModelChange={handleModelChange}
-                isElectron={isElectron}
-                processingStatus={processingStatus.status}
-                onGenerateOutput={() => {}} // Assuming generateOutput uses selected model
-                totalTokenCount={displayedTokenCount}
-                selectedContextLength={selectedContextLength}
-                isCompressionEnabled={isCompressionEnabled}
-                setIsCompressionEnabled={setIsCompressionEnabled}
-                isCommentRemovalEnabled={isCommentRemovalEnabled}
-                setIsCommentRemovalEnabled={setIsCommentRemovalEnabled}
-                onRefreshModels={handleRefreshModels}
-                // Pass new props for enhanced compression controls
-                keepDocstrings={keepDocstrings}
-                setKeepDocstrings={setKeepDocstrings}
-                removeEmptyLines={removeEmptyLines}
-                setRemoveEmptyLines={setRemoveEmptyLines}
-                neverCompressPatterns={neverCompressPatterns}
-                neverCompressPatternsRaw={neverCompressPatternsRaw}
-                setNeverCompressPatternsRaw={setNeverCompressPatternsRaw}
-                minCompressTokenThreshold={minCompressTokenThreshold}
-                setMinCompressTokenThreshold={setMinCompressTokenThreshold}
-              />
             </div>
-          ) : (
-            <div className={styles.contentArea}>
-              <div className={styles.emptyStateContent}>
-                <h2>Welcome to ContextCraft</h2>
-                <p>Select a folder to get started.</p>
-                <Button variant="primary" onClick={openFolder} className="mt-4"> Select Project Folder </Button>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Confirmation Dialogs */}
-        <ConfirmationDialog isOpen={showClearSelectionDialog} onClose={() => setShowClearSelectionDialog(false)} onConfirm={clearSelection} title="Clear Selection" description="Clear all selected files?" confirmLabel="Clear" variant="destructive" />
-        <ConfirmationDialog isOpen={showRemoveAllFoldersDialog} onClose={() => setShowRemoveAllFoldersDialog(false)} onConfirm={removeAllFolders} title="Remove All Folders" description="Remove all folders and reset the application?" confirmLabel="Remove All" variant="destructive" />
-        <ConfirmationDialog isOpen={showResetPatternsDialog} onClose={() => setShowResetPatternsDialog(false)} onConfirm={confirmResetPatterns} title={`Reset ${resetPatternsContext?.isGlobal ? 'Global' : 'Local'} Ignore Patterns`} description="Reset patterns to their default values?" confirmLabel="Reset" variant="destructive" />
+            {/* Confirmation Dialogs */}
+            <ConfirmationDialog isOpen={showClearSelectionDialog} onClose={() => setShowClearSelectionDialog(false)} onConfirm={clearSelection} title="Clear Selection" description="Clear all selected files?" confirmLabel="Clear" variant="destructive" />
+            <ConfirmationDialog isOpen={showRemoveAllFoldersDialog} onClose={() => setShowRemoveAllFoldersDialog(false)} onConfirm={removeAllFolders} title="Remove All Folders" description="Remove all folders and reset the application?" confirmLabel="Remove All" variant="destructive" />
+            <ConfirmationDialog isOpen={showResetPatternsDialog} onClose={() => setShowResetPatternsDialog(false)} onConfirm={confirmResetPatterns} title={`Reset ${resetPatternsContext?.isGlobal ? 'Global' : 'Local'} Ignore Patterns`} description="Reset patterns to their default values?" confirmLabel="Reset" variant="destructive" />
+          </div>
+        )}
       </div>
     </ThemeProvider>
   );
