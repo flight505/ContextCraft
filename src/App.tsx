@@ -369,7 +369,7 @@ const App = () => {
       window.electron.send("request-file-list", selectedFolder);
     }
     
-  }, [isElectron, selectedFolder]);
+  }, [isElectron, selectedFolder]); // Keep dependency
 
   // Listen for folder selection and file list data
   useEffect(() => {
@@ -411,43 +411,9 @@ const App = () => {
       applyFiltersAndSort(filesMetadata, sortOrder, searchTerm);  
       setProcessingStatus({ status: "complete", message: `Loaded ${filesMetadata.length} files` });
     };
-    
-    // PERFORMANCE IMPROVEMENT: Handle partial file list updates
-    const handlePartialFileListData = (partialFilesMetadata: Omit<FileData, 'content'>[]) => {
-      console.log(`Received partial metadata for ${partialFilesMetadata.length} files`);
-      
-      // Update files progressively by appending to existing files
-      setAllFiles(prevFiles => {
-        const newFiles = [...prevFiles];
-        
-        // Add new files, avoiding duplicates by path
-        const existingPaths = new Set(prevFiles.map(f => f.path));
-        for (const file of partialFilesMetadata) {
-          if (!existingPaths.has(file.path)) {
-            newFiles.push(file);
-            existingPaths.add(file.path);
-          }
-        }
-        
-        return newFiles;
-      });
-      
-      // Update the filtered/sorted list based on the latest files
-      // Note that we need to use a callback to ensure we're using the latest state
-      setAllFiles(currentFiles => {
-        applyFiltersAndSort(currentFiles, sortOrder, searchTerm);
-        return currentFiles;
-      });
-    };
 
-    const handleProcessingStatus = (status: { status: "idle" | "processing" | "complete" | "error"; message: string; partial?: boolean }) => {
+    const handleProcessingStatus = (status: { status: "idle" | "processing" | "complete" | "error"; message: string; }) => {
       setProcessingStatus(status);
-      
-      // If the status includes "partial: true", we're getting progressive updates
-      // Don't mark as complete until we get the final "complete" status without partial flag
-      if (status.status === "complete" && !status.partial) {
-        console.log("File loading complete:", status.message);
-      }
     };
 
     const handleIgnorePatternsLoaded = (result: { patterns: string; isGlobal: boolean; systemPatterns?: string[]; folderPath?: string }) => {
@@ -475,17 +441,17 @@ const App = () => {
     // Setup IPC listeners using the exposed 'receive' method
     window.electron.receive("folder-selected", handleFolderSelected);
     window.electron.receive("file-list-data", handleFileListData);
-    window.electron.receive("file-list-partial-data", handlePartialFileListData); // Add handler for partial updates
     window.electron.receive("file-processing-status", handleProcessingStatus);
     window.electron.receive("ignore-patterns-loaded", handleIgnorePatternsLoaded);
 
     // Cleanup function should use removeListener if it exists on the exposed API
+    // Assuming removeListener was exposed for symmetry with 'on'/'receive'
+    // If not, this cleanup might need adjustment based on preload.js structure
     return () => {
       // Check if ipcRenderer and removeListener method exist before calling
       if (window.electron.ipcRenderer?.removeListener) {
         window.electron.ipcRenderer.removeListener("folder-selected", handleFolderSelected);
         window.electron.ipcRenderer.removeListener("file-list-data", handleFileListData);
-        window.electron.ipcRenderer.removeListener("file-list-partial-data", handlePartialFileListData); // Clean up partial updates handler
         window.electron.ipcRenderer.removeListener("file-processing-status", handleProcessingStatus);
         window.electron.ipcRenderer.removeListener("ignore-patterns-loaded", handleIgnorePatternsLoaded);
       } else {
@@ -493,7 +459,7 @@ const App = () => {
         // Alternative cleanup if needed, e.g., calling ipcRenderer.removeAllListeners(channel)
       }
     };
-  }, [isElectron, applyFiltersAndSort, sortOrder, searchTerm, selectedFolder]);
+  }, [isElectron, applyFiltersAndSort, sortOrder, searchTerm, selectedFolder]); // Dependencies
 
   // Add ESC key handler
   const handleEscKey = useCallback((e: KeyboardEvent) => {

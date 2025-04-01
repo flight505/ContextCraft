@@ -910,10 +910,7 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
   const skipDirectories = [
     'node_modules', '.git', 'dist', 'build', 'target',
     'bin', 'obj', 'venv', 'env', '.venv', '.env',
-    '.next', '.idea', '.gradle', '.cache', 'coverage',
-    // Add more common large directories
-    'logs', 'log', 'vendor', 'packages', 'tmp', 'temp', 
-    'public', 'assets', 'downloads', 'uploads', 'media'
+    '.next', '.idea', '.gradle', '.cache', 'coverage'
   ];
   
   if (skipDirectories.includes(dirName)) {
@@ -954,13 +951,6 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
     } catch (err) {
       console.error(`Error reading directory ${dir}:`, err);
       return results;
-    }
-
-    // PERFORMANCE IMPROVEMENT: Limit total number of files/dirs to process
-    const MAX_TOTAL_ENTRIES = 5000;
-    if (dirents.length > MAX_TOTAL_ENTRIES) {
-      console.log(`Directory ${dir} has too many entries (${dirents.length} > ${MAX_TOTAL_ENTRIES}), limiting processing`);
-      dirents = dirents.slice(0, MAX_TOTAL_ENTRIES);
     }
 
     // Quick check if there are too many files in this directory (likely not useful)
@@ -1029,18 +1019,11 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
       }
     }
 
-    // PERFORMANCE IMPROVEMENT: Cap number of directories to process
-    const MAX_DIRECTORIES = 50; // Lowered from 100
-    if (directories.length > MAX_DIRECTORIES) {
-      console.log(`Limiting directory processing from ${directories.length} to ${MAX_DIRECTORIES} in ${dir}`);
-      directories.length = MAX_DIRECTORIES;
-    }
-
     // Process directories recursively but limit depth and count
     let dirCount = 0;
     for (const dirent of directories) {
-      if (dirCount++ > MAX_DIRECTORIES) {
-        console.log(`Limiting directory processing to ${MAX_DIRECTORIES} subdirectories in ${dir}`);
+      if (dirCount++ > 100) {
+        console.log(`Limiting directory processing to 100 subdirectories in ${dir}`);
         break;
       }
       
@@ -1051,18 +1034,11 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
       results = results.concat(subResults);
     }
 
-    // PERFORMANCE IMPROVEMENT: Cap number of files to process
-    const MAX_FILES = 500; // Lowered from 1000
-    if (files.length > MAX_FILES) {
-      console.log(`Limiting file processing from ${files.length} to ${MAX_FILES} in ${dir}`);
-      files.length = MAX_FILES;
-    }
-
     // Process files but limit to a reasonable number
     let fileCount = 0;
     for (const dirent of files) {
-      if (fileCount++ > MAX_FILES) {
-        console.log(`Limiting file processing to ${MAX_FILES} files in ${dir}`);
+      if (fileCount++ > 1000) {
+        console.log(`Limiting file processing to 1000 files in ${dir}`);
         break;
       }
       
@@ -1247,7 +1223,7 @@ function handleRequestFileList(event, data) {
     // Set loading flag
     isLoadingDirectory = true;
     
-    // Set timeout to abort if it takes too long - increase to 3 minutes for larger directories
+    // Set timeout to abort if it takes too long
     if (loadingTimeoutId) {
       clearTimeout(loadingTimeoutId);
     }
@@ -1256,10 +1232,13 @@ function handleRequestFileList(event, data) {
         console.log("Loading directory timed out");
         cancelDirectoryLoading(mainWindow);
       }
-    }, 180000); // Increased from 120000 (2 min) to 180000 (3 min)
+    }, 120000); // 2 minutes timeout
     
-    // PERFORMANCE IMPROVEMENT: Use async processing with directory scanning
-    const processFiles = async () => {
+    // Rest of your original file processing logic
+    // ...
+    
+    // Start processing files logic goes here (unchanged from the original function)
+    const processFiles = () => {
       console.log("Starting file scan in:", folderPath);
       console.log("OS normalized path:", normalizePath(folderPath));
       
@@ -1267,9 +1246,7 @@ function handleRequestFileList(event, data) {
       directoryCache.clear(folderPath);
       
       // First, get all files in the directory
-      console.time('readFilesRecursively');
       const files = readFilesRecursively(folderPath, folderPath);
-      console.timeEnd('readFilesRecursively');
       console.log(`Found ${files.length} files in ${folderPath}`);
       
       // Debug log of first few files
@@ -1288,14 +1265,10 @@ function handleRequestFileList(event, data) {
         message: `Processing ${files.length} files...`,
       });
 
-      // PERFORMANCE IMPROVEMENT: Use smaller chunks and progressive loading
-      const CHUNK_SIZE = files.length < 100 ? 50 : files.length < 500 ? 20 : 10; // Dynamic chunk size based on file count
+      // Optimize chunk size based on file count
+      const CHUNK_SIZE = files.length < 100 ? 50 : 20; // Larger chunks for small directories
       let currentIndex = 0;
       const processedFiles = [];
-      
-      // PERFORMANCE IMPROVEMENT: Send files in smaller batches as they're processed
-      const SEND_BATCH_SIZE = 100; // Number of files to accumulate before sending to renderer
-      let currentBatch = [];
 
       const processNextChunk = () => {
         // Calculate the end index for this chunk
@@ -1313,7 +1286,7 @@ function handleRequestFileList(event, data) {
           const isExcluded = shouldExcludeByDefault(normalizedPath, folderPath);
           
           // Create a clean file object
-          const processedFile = {
+          processedFiles.push({
             name: file.name ? String(file.name) : "",
             path: normalizedPath, // Use normalized path
             tokenCount: typeof file.tokenCount === "number" ? file.tokenCount : 0,
@@ -1331,30 +1304,7 @@ function handleRequestFileList(event, data) {
             fileType: file.fileType ? String(file.fileType) : null,
             excludedByDefault: isExcluded,
             excluded: isExcluded, // Set the excluded property as well
-          };
-          
-          processedFiles.push(processedFile);
-          currentBatch.push(processedFile);
-          
-          // PERFORMANCE IMPROVEMENT: Send files in batches to renderer as we process them
-          if (currentBatch.length >= SEND_BATCH_SIZE) {
-            // Clone the batch to avoid any reference issues
-            const batchToSend = [...currentBatch];
-            
-            // Send progress update with partial results - marked as "partial" so renderer knows more are coming
-            event.sender.send("file-processing-status", {
-              status: "processing",
-              message: `Processed ${processedFiles.length} of ${files.length} files (${Math.round((processedFiles.length / files.length) * 100)}%)`,
-              partial: true
-            });
-            
-            // Send this batch to renderer
-            console.log(`Sending batch of ${batchToSend.length} files to renderer (${processedFiles.length}/${files.length} total)`);
-            event.sender.send("file-list-partial-data", batchToSend);
-            
-            // Clear the current batch
-            currentBatch = [];
-          }
+          });
         });
         
         // Update the current index
@@ -1362,34 +1312,30 @@ function handleRequestFileList(event, data) {
         
         // Update progress
         const progressPercentage = Math.round((currentIndex / files.length) * 100);
-        
-        // Send progress update through event
         event.sender.send("file-processing-status", {
           status: "processing",
-          message: `Processed ${currentIndex} of ${files.length} files (${progressPercentage}%)`,
+          message: `Processing files... ${progressPercentage}% (${currentIndex}/${files.length})`,
         });
         
+        // If there are more files to process, schedule the next chunk
         if (currentIndex < files.length) {
-          // Schedule the next chunk to avoid blocking the main thread for too long
+          // Use setTimeout to allow the UI to update between chunks
           setTimeout(processNextChunk, 0);
         } else {
-          // All chunks processed, update status to complete
-          event.sender.send("file-processing-status", {
-            status: "complete",
-            message: `Processed all ${files.length} files`,
-          });
+          // All files processed, send the complete list
+          console.log(`Finished processing all ${processedFiles.length} files`);
           
-          // Cache the processed files for later use
+          // Cache the processed files
           directoryCache.set(folderPath, processedFiles);
           
-          // Send any remaining files in the last batch
-          if (currentBatch.length > 0) {
-            console.log(`Sending final batch of ${currentBatch.length} files to renderer`);
-            event.sender.send("file-list-partial-data", currentBatch);
-          }
+          // Send completion status
+          event.sender.send("file-processing-status", {
+            status: "complete",
+            message: `Found ${processedFiles.length} files`,
+          });
           
           try {
-            console.log(`Sending all ${processedFiles.length} files to renderer as final data`);
+            console.log(`Sending ${processedFiles.length} files to renderer`);
             // Log a sample of paths to check normalization
             if (processedFiles.length > 0) {
               console.log("Sample file paths (first 3):");
@@ -1398,7 +1344,7 @@ function handleRequestFileList(event, data) {
               });
             }
             
-            // Send the complete file list to the renderer process
+            // Send the files to the renderer process
             event.sender.send("file-list-data", processedFiles);
             
             // Clear loading state
