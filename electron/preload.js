@@ -16,6 +16,7 @@ const VALID_CHANNELS = {
   receive: [
     "folder-selected", 
     "file-list-data", 
+    "file-list-partial-data",
     "file-processing-status", 
     "ignore-patterns-loaded", 
     "ignore-patterns-saved",
