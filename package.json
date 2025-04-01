@@ -44,12 +44,28 @@
     "appId": "com.contextcraft.app",
     "productName": "ContextCraft",
     "directories": {
-      "output": "release-builds"
+      "output": "release-builds",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "node_modules/**/*"
+      "!node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules",
+        "to": "node_modules",
+        "filter": [
+          "ignore/**",
+          "tiktoken/**",
+          "gpt-3-encoder/**",
+          "jsdom/**",
+          "chokidar/**",
+          "tree-sitter*/**"
+        ]
+      }
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
@@ -58,14 +74,18 @@
         "dmg",
         "zip"
       ],
-      "hardenedRuntime": false
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
       "target": [
         "nsis",
         "portable"
       ],
-      "icon": "public/favicon.ico"
+      "icon": "public/favicon.ico",
+      "publisherName": ["flight505"]
     },
     "linux": {
       "target": [
@@ -76,18 +96,20 @@
       "category": "Development",
       "icon": "public/favicon.png"
     },
+    "asar": true,
     "asarUnpack": [
       "node_modules/ignore/**",
       "node_modules/tiktoken/**",
       "node_modules/gpt-3-encoder/**",
       "node_modules/jsdom/**",
-      "node_modules/chokidar/**"
+      "node_modules/chokidar/**",
+      "node_modules/tree-sitter*/**"
     ],
-    "asar": true,
     "afterSign": "scripts/notarize.js",
-    "publish": [
-      "github"
-    ]
+    "publish": {
+      "provider": "github",
+      "releaseType": "draft"
+    }
   },
   "devDependencies": {
     "@electron/notarize": "^2.5.0",

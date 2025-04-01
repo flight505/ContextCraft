@@ -1,4 +1,4 @@
-name: Build and Release with Code Signing
+name: Build and Release
 
 on:
   push:
@@ -24,9 +24,11 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm list electron electron-builder || true
 
-      - name: Cache electron-builder cache
+      - name: Cache electron-builder
         uses: actions/cache@v4
         with:
           path: |
@@ -36,70 +38,82 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-electron-builder-
 
-      # Code signing setup for macOS
-      - name: Set up macOS code signing
-        if: matrix.os == 'macos-latest' && secrets.MACOS_CERTIFICATE
-        uses: apple-actions/import-codesign-certs@v1
-        with:
-          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
-          p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-          keychain: build.keychain
-          keychain-password: ${{ secrets.KEYCHAIN_PWD }}
+      # Code signing setup for macOS (only if secrets exist)
+      - name: Import macOS certificates
+        if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/') && env.CERTIFICATE_OSX_APPLICATION != ''
+        env:
+          CERTIFICATE_OSX_APPLICATION: ${{ secrets.MACOS_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          if [ -n "$CERTIFICATE_OSX_APPLICATION" ]; then
+            echo "Importing macOS certificates..."
+            echo $CERTIFICATE_OSX_APPLICATION | base64 --decode > certificate.p12
+            security create-keychain -p "$CERTIFICATE_PASSWORD" build.keychain
+            security default-keychain -s build.keychain
+            security unlock-keychain -p "$CERTIFICATE_PASSWORD" build.keychain
+            security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CERTIFICATE_PASSWORD" build.keychain
+          else
+            echo "No macOS certificates found, skipping code signing"
+          fi
 
-      # Code signing setup for Windows
-      - name: Set up Windows code signing
-        if: matrix.os == 'windows-latest' && secrets.WINDOWS_CERTIFICATE
-        uses: crazy-max/ghaction-import-pfx@v1
-        with:
-          pfx-base64: ${{ secrets.WINDOWS_CERTIFICATE }}
-          pfx-password: ${{ secrets.WINDOWS_CERTIFICATE_PWD }}
-
+      # Build Vite app
       - name: Build Vite app
         run: npm run build
+        env:
+          CI: true
 
-      - name: Build and package Electron app (macOS)
+      # Platform-specific builds
+      - name: Build for macOS
         if: matrix.os == 'macos-latest'
-        run: npm run package
+        run: npm run package:mac
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          TEAM_ID: ${{ secrets.TEAM_ID }}
-          NOTARIZE: ${{ secrets.NOTARIZE || 'false' }}
+          DEBUG: electron-builder
 
-      - name: Build and package Electron app (Windows)
+      - name: Build for Windows
         if: matrix.os == 'windows-latest'
-        run: npm run package
+        run: npm run package:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PWD }}
+          DEBUG: electron-builder
 
-      - name: Build and package Electron app (Linux)
+      - name: Build for Linux
         if: matrix.os == 'ubuntu-latest'
-        run: npm run package
+        run: npm run package:linux
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
 
-      - name: Upload artifacts
+      # Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-artifacts
           path: |
             release-builds/*.dmg
             release-builds/*.exe
+            release-builds/*.msi
             release-builds/*.AppImage
             release-builds/*.deb
+            release-builds/*.rpm
+            release-builds/*.zip
           if-no-files-found: warn
 
-      - name: Release
+      # Create GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: release-builds/**
           draft: true
           generate_release_notes: true
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
