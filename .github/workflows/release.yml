@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest]  # Focusing on macOS for now
 
     steps:
       - name: Check out Git repository
@@ -38,82 +38,82 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-electron-builder-
 
-      # Code signing setup for macOS (only if secrets exist)
+      # Code signing setup for macOS
       - name: Import macOS certificates
-        if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/') && env.CERTIFICATE_OSX_APPLICATION != ''
+        if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/')
         env:
-          CERTIFICATE_OSX_APPLICATION: ${{ secrets.MACOS_CERTIFICATE }}
-          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD || 'tempkeychain' }}
         run: |
-          if [ -n "$CERTIFICATE_OSX_APPLICATION" ]; then
-            echo "Importing macOS certificates..."
-            echo $CERTIFICATE_OSX_APPLICATION | base64 --decode > certificate.p12
-            security create-keychain -p "$CERTIFICATE_PASSWORD" build.keychain
-            security default-keychain -s build.keychain
-            security unlock-keychain -p "$CERTIFICATE_PASSWORD" build.keychain
-            security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CERTIFICATE_PASSWORD" build.keychain
-          else
-            echo "No macOS certificates found, skipping code signing"
-          fi
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PWD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PWD" build.keychain
+          
+          # Import certificate to keychain
+          echo "$MACOS_CERTIFICATE" | base64 -D > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+          
+          # Add keychain to keychain-list
+          security list-keychains -s build.keychain
+          security set-keychain-settings -t 3600 -l build.keychain
+          
+          # Allow codesign to access keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" build.keychain
+          
+          # Verify certificate import
+          security find-identity -v -p codesigning build.keychain
 
-      # Build Vite app
       - name: Build Vite app
         run: npm run build
         env:
           CI: true
 
-      # Platform-specific builds
       - name: Build for macOS
         if: matrix.os == 'macos-latest'
-        run: npm run package:mac
+        run: |
+          # Debug info
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "Dist directory contents:"
+          ls -la dist || echo "No dist directory"
+          
+          # Run the build with verbose logging
+          npm run package:mac --verbose
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          DEBUG: electron-builder
+          DEBUG: electron-builder,electron-builder:*
 
-      - name: Build for Windows
-        if: matrix.os == 'windows-latest'
-        run: npm run package:win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PWD }}
-          DEBUG: electron-builder
+      - name: Verify build output
+        run: |
+          echo "Release builds directory contents:"
+          ls -la release-builds || echo "No release-builds directory"
+          find . -name "*.dmg" -o -name "*.zip"
 
-      - name: Build for Linux
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run package:linux
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: electron-builder
-
-      # Upload artifacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-artifacts
+          name: macos-artifacts
           path: |
             release-builds/*.dmg
-            release-builds/*.exe
-            release-builds/*.msi
-            release-builds/*.AppImage
-            release-builds/*.deb
-            release-builds/*.rpm
             release-builds/*.zip
-          if-no-files-found: warn
+          if-no-files-found: error
 
-      # Create GitHub Release
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: release-builds/**
+          files: |
+            release-builds/*.dmg
+            release-builds/*.zip
           draft: true
           generate_release_notes: true
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
