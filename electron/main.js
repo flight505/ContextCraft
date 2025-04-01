@@ -303,6 +303,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    title: "ContextCraft",
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
