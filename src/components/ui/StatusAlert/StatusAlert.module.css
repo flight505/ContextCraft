@@ -1,0 +1,88 @@
+.alertContainer {
+    position: relative;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+    display: flex;
+    align-items: center;
+    background-color: var(--background-secondary);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+    height: 36px;
+    overflow: hidden;
+  }
+  
+  .enter {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .exit {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  
+  .alertContent {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    align-items: center;
+  }
+  
+  .messageContent {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 14px;
+    font-family: monospace;
+  }
+  
+  .terminalPrefix {
+    font-family: 'Courier New', Courier, monospace;
+    color: var(--text-secondary);
+    margin-right: 0.25rem;
+  }
+  
+  .alertTitle {
+    font-weight: 500;
+    margin: 0;
+    font-size: 12px;
+  }
+  
+  .alertDescription {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+  
+  /* Status-specific styles */
+  .processing {
+    background-color: var(--background-secondary);
+  }
+  
+  .complete {
+    background-color: var(--background-secondary);
+  }
+  
+  .error {
+    background-color: var(--background-secondary);
+  }
+  
+  .closeButton {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    width: 16px;
+  }
+  
+  .closeButton:hover {
+    color: var(--text-primary);
+  }

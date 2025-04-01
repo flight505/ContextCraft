@@ -1,0 +1,143 @@
+.fileCard {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  position: relative;
+  height: auto;
+  min-height: 70px;
+  background-color: var(--card-background);
+  color: var(--card-foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  
+  backdrop-filter: var(--backdrop-blur-sm);
+  -webkit-backdrop-filter: var(--backdrop-blur-sm);
+}
+
+.fileCard:hover {
+  background-color: var(--card-background);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-color: var(--border-color);
+  transform: translateY(-1px);
+}
+
+.fileCard.selected {
+  border-color: var(--file-card-selected-border);
+  box-shadow: 0 0 0 1px var(--file-card-selected-border);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.fileCardContent {
+  padding: 6px !important;
+}
+
+.fileCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.fileCardIcon {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  margin-right: 0.2rem;
+  flex-shrink: 0;
+}
+
+.fileCardName {
+  flex: 1;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: var(--card-foreground);
+  font-size: 11px;
+}
+
+.fileCardInfo {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  flex-grow: 1;
+}
+
+.fileCardTokens {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+
+.fileCardStatus {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.tokenBarContainer {
+  width: 100%;
+  height: 3px;
+  background-color: var(--background-secondary);
+  border-radius: 1.5px;
+  overflow: hidden;
+}
+
+.tokenBar {
+  height: 100%;
+  background-color: var(--accent-color);
+  border-radius: 1.5px;
+  transition: width 0.3s ease;
+}
+
+.fileCardActions {
+  display: flex;
+  gap: 2px;
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.fileCard:hover .fileCardActions {
+  opacity: 1;
+}
+
+.fileCardAction {
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  color: var(--text-secondary);
+  transition: color 0.2s ease !important;
+}
+
+.fileCardAction:hover {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.copySuccess {
+  color: var(--success-color);
+  animation: pulse 1s ease-in-out;
+}
+
+.compressedIcon {
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+} 

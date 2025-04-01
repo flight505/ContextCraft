@@ -1,0 +1,167 @@
+name: Debug Build Process
+
+on:
+  workflow_dispatch: # Allow manual triggering
+  push:
+    tags:
+      - "debug-v*" # Special tag prefix for debugging
+
+jobs:
+  debug_build:
+    name: Debug ${{ matrix.os }} Build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest] # Start with just macOS for debugging
+        # os: [macos-latest, ubuntu-latest, windows-latest] # Uncomment for all platforms
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for potential debugging needs
+
+      - name: System Information
+        run: |
+          echo "==== SYSTEM INFO ===="
+          echo "OS: ${{ runner.os }}"
+          echo "Github ref: ${{ github.ref }}"
+          echo "Github SHA: ${{ github.sha }}"
+          echo "Architecture: $(uname -m)"
+          echo "Python: $(python3 --version || echo 'not installed')"
+          echo "Disk space:"
+          df -h
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Node.js & NPM Info
+        run: |
+          echo "==== NODE INFO ===="
+          node --version
+          npm --version
+          npm config list || echo "Cannot list npm config"
+          echo "NODE_PATH: $NODE_PATH"
+          echo "Path:"
+          echo $PATH
+
+      - name: Install dependencies
+        run: |
+          echo "==== INSTALLING DEPENDENCIES ===="
+          npm ci --verbose
+
+      - name: Debug project structure
+        run: |
+          echo "==== PROJECT STRUCTURE ===="
+          find . -type f -not -path "*/node_modules/*" -not -path "*/\.*" | sort
+
+          echo "==== PACKAGE.JSON CONTENT ===="
+          cat package.json
+
+      - name: Build step
+        run: |
+          echo "==== BUILDING APPLICATION ===="
+          npm run build
+
+          echo "==== BUILD OUTPUT ===="
+          ls -la dist || echo "dist directory not found!"
+          find dist -type f | wc -l || echo "No files in dist"
+
+      - name: Debug main.js
+        run: |
+          echo "==== MAIN.JS CONTENT ===="
+          cat main.js || echo "main.js not found!"
+
+      - name: Create directories
+        run: |
+          echo "==== ENSURING DIRECTORIES ===="
+          mkdir -p release-builds
+          ls -la release-builds
+
+      - name: Run electron-builder directly
+        run: |
+          echo "==== RUNNING ELECTRON-BUILDER DIRECTLY ===="
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            npx electron-builder --mac --publish=never --debug
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            npx electron-builder --linux --publish=never --debug
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            npx electron-builder --win --publish=never --debug
+          fi
+
+      - name: Check output
+        run: |
+          echo "==== CHECKING OUTPUT ===="
+          find . -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.zip"
+
+          echo "==== RELEASE BUILDS DIRECTORY ===="
+          ls -la release-builds || echo "release-builds directory not found after packaging!"
+
+          echo "==== DEEP LIST OF OUTPUT ===="
+          find release-builds -type f || echo "No files in release-builds"
+
+      - name: Cache electron-builder cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-debug-artifacts
+          path: release-builds/*.{dmg,zip}
+          if-no-files-found: warn
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-debug-artifacts
+          path: release-builds/*.{exe,msi}
+          if-no-files-found: warn
+
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-debug-artifacts
+          path: release-builds/*.{AppImage,deb,rpm}
+          if-no-files-found: warn
+
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-${{ runner.os }}-logs
+          path: |
+            package.json
+            main.js
+            release-builds/**
+            dist/**
+            ~/.electron-builder/**
+          if-no-files-found: warn
+
+      - name: Create debug release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/debug-v')
+        with:
+          files: release-builds/**/*
+          draft: true
+          prerelease: true
+          name: "Debug Build ${{ github.ref_name }}"
+          body: |
+            This is a debug build created by the debug-build workflow.
+            OS: ${{ runner.os }}
+            Node: $(node -v)
+            Date: $(date)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

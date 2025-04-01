@@ -1,0 +1,557 @@
+.controlContainer {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  background-color: var(--background-primary);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Ensure shadows don't leak */
+  
+  /* Add macOS-like vibrancy effect */
+  backdrop-filter: var(--backdrop-blur-md);
+  -webkit-backdrop-filter: var(--backdrop-blur-md);
+}
+
+.controlContainerHeader {
+  background-color: var(--background-secondary);
+  padding: 6px 8px; /* Smaller padding */
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px; /* Reduced from 15px */
+  letter-spacing: -0.01em;
+  display: flex; /* Enable flexbox */
+  align-items: center; /* Vertically center items */
+  justify-content: space-between; /* Space between left section and centered buttons */
+  height: 30px; /* Fixed height for smaller header */
+  
+  /* Add macOS-like vibrancy effect */
+  backdrop-filter: var(--backdrop-blur-sm);
+  -webkit-backdrop-filter: var(--backdrop-blur-sm);
+}
+
+/* Left part of header with Controls text and toggle */
+.controlHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Header actions - now on the left */
+.headerActionButtons {
+  display: flex;
+  margin-left: 6px;
+}
+
+/* Instructions section at the top */
+.controlInstructions {
+  padding: 6px 10px; /* Reduced padding */
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-primary);
+  font-size: var(--font-size-xs); /* Smaller font */
+}
+
+/* Tabs container */
+.controlTabs {
+  width: 100%;
+}
+
+.tabsContainer {
+  padding: 0;
+}
+
+.tabsContentWrapper {
+  padding: 10px; /* Reduced from 16px */
+  background-color: var(--background-primary);
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* Individual control items */
+.controlItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px; /* Smaller bottom margin */
+  width: 100%;
+}
+
+.controlItem:last-child {
+  margin-bottom: 0;
+}
+
+/* Control labels */
+.controlLabel {
+  min-width: 60px; /* Reduced from 70px */
+  font-weight: 500;
+  font-size: 10px; /* Reduced from 12px */
+  color: var(--text-secondary);
+}
+
+/* Control sizes for different importance levels */
+.controlPrimary {
+  font-weight: 500;
+  font-size: 11px; /* Reduced from 12px */
+}
+
+.controlSecondary, 
+.controlHelp {
+  font-size: 9px; /* Reduced from 10px */
+  color: var(--text-secondary);
+}
+
+/* Token usage styling */
+.tokenBarContainer {
+  height: 3px;
+  width: 100%;
+  background-color: hsl(240, 5.9%, 90%);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  position: relative;
+}
+
+.tokenBar {
+  height: 100%;
+  width: 0;
+  background: var(--accent-color);
+  transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 9999px;
+}
+
+.dark .tokenBarContainer {
+  background-color: hsl(240, 3.7%, 25%);
+}
+
+/* Token warnings */
+.tokenWarning {
+  color: var(--warning-color, #f59e0b);
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  margin-top: 6px; /* Reduced from 8px */
+  font-weight: 500;
+  padding: 4px 8px; /* Reduced padding */
+  background-color: var(--warning-bg-color, rgba(245, 158, 11, 0.1));
+  border-radius: var(--radius);
+}
+
+.tokenLimitWarning {
+  margin-top: 8px; /* Reduced from 10px */
+}
+
+/* Token count text */
+.tokenCountText {
+  margin: 4px 0 6px 0; /* Reduced margins */
+  font-size: 10px; /* Explicit small size */
+}
+
+/* Token usage bar */
+.tokenUsageBar {
+  height: 3px; /* Reduced from 4px */
+  width: 100%;
+  background-color: var(--background-tertiary, rgba(0, 0, 0, 0.1));
+  border-radius: 2px;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.tokenUsageFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Token usage colors */
+.tokenGood {
+  color: var(--success-color, #10b981);
+}
+
+.tokenWarning {
+  color: var(--warning-color, #f59e0b);
+}
+
+.tokenDanger {
+  color: var(--error-color, #ef4444);
+}
+
+/* Token header */
+.tokenHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px; /* Reduced from 8px */
+  font-size: 12px; /* Reduced from 14px */
+}
+
+/* Tiny switch class */
+.tinySwitch {
+  transform: scale(0.65) !important;
+  transform-origin: left center !important;
+}
+
+/* Switch with label layout */
+.switchWithLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.switchWithLabel:last-child {
+  margin-bottom: 0;
+}
+
+/* Model selector container */
+.modelSelectorContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* Search container for local dropdowns */
+.searchContainerLocal {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-bottom: 4px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchIconLocal {
+  color: var(--icon-color);
+  margin-right: 6px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.searchInputLocal {
+  flex: 1;
+  font-size: 11px;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  padding: 2px 0;
+  width: 100%;
+  height: 18px;
+}
+
+.searchInputLocal:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+/* Simple tabs implementation */
+.simpleTabs {
+  width: 100%;
+}
+
+.simpleTabsList {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+}
+
+.simpleTabsTrigger {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 11px;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.simpleTabsTrigger:hover {
+  color: var(--text-primary);
+  background-color: var(--hover-color);
+}
+
+.simpleTabsTriggerActive {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.simpleTabsTriggerActive::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent-color);
+  transform: scaleX(0.8);
+  transition: transform 0.2s;
+}
+
+.simpleTabsTrigger:hover::after {
+  transform: scaleX(1);
+}
+
+.simpleTabsContent {
+  padding: 10px;
+}
+
+.smallerDropdown {
+  font-size: 11px;
+  width: auto;
+  min-width: 120px;
+  max-width: 160px;
+}
+
+/* Wider dropdown for model selection */
+.modelDropdown {
+  font-size: 11px;
+  width: auto;
+  min-width: 220px;
+  max-width: 280px;
+}
+
+/* Fixed-width dropdown for consistent sizing in configure tab */
+.configureDropdown {
+  font-size: 11px;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+}
+
+.controlGroup {
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.controlGroup:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.controlGroupLabel {
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.controlHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.instructionsToggle {
+  display: flex;
+  align-items: center;
+}
+
+.smallSwitch {
+  height: 28px;
+}
+
+.switchContainer {
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+.switchDescription {
+  margin-left: 36px;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.controlRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.formatDropdown {
+  width: 100%;
+}
+
+.tokenInfo {
+  width: 100%;
+}
+
+.tokenInfoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.tokenBarContainer {
+  width: 100%;
+  height: 4px; /* Reduced from 6px */
+  background-color: var(--background-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.tokenBar {
+  height: 100%;
+  background-color: var(--success-color);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.tokenGood {
+  color: var(--success-color);
+}
+
+.tokenWarning {
+  color: var(--warning-color);
+}
+
+.tokenDanger {
+  color: var(--error-color);
+}
+
+.tokenBar.tokenWarning {
+  background-color: var(--warning-color);
+}
+
+.tokenBar.tokenDanger {
+  background-color: var(--error-color);
+}
+
+.tokenWarningMessage {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px; /* Reduced from 0.85rem */
+  color: var(--error-color);
+  margin-bottom: 4px;
+}
+
+.optimizationInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius);
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.infoIcon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.controlActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  flex: 1;
+  min-width: 80px;
+}
+
+.refreshButton {
+  color: var(--text-secondary);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Search styling improvements */
+.searchContainerLocal:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.searchInputLocal::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.searchContainerLocal:focus-within .searchIconLocal {
+  opacity: 1;
+}
+
+/* Styles for new compression UI elements */
+.numberInput {
+  width: 80px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 11px;
+  height: 24px;
+}
+
+.patternsTextarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 120px;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  margin-bottom: 4px;
+  line-height: 1.4;
+  white-space: pre;
+  tab-size: 2;
+  letter-spacing: normal;
+  text-rendering: auto;
+}
+
+
+
+
+

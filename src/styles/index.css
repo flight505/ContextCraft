@@ -1,0 +1,203 @@
+:root {
+  /* Refined monochrome Zinc theme with improved contrasts */
+  --background-primary: hsl(0, 0%, 100%);
+  --background-primary-dark: hsl(240, 10%, 3.9%);
+  --background-secondary: hsla(240, 4.8%, 95.9%, 0.92);
+  --background-selected: hsla(216, 12%, 92%, 0.85);
+  --card-background: hsla(0, 0%, 100%, 0.92);
+  --card-foreground: hsl(240, 10%, 3.9%);
+  --accent-color: hsl(215, 25%, 27%);
+  --border-color: hsla(240, 5.9%, 90%, 0.85);
+  --hover-color: hsla(210, 8%, 90%, 0.85);
+  --text-primary: hsl(240, 10%, 3.9%);
+  --text-secondary: hsl(215, 14%, 34%);
+  --text-disabled: hsl(240, 3.8%, 70%);
+  --icon-color: hsl(215, 14%, 34%);
+  --success-color: hsl(142, 72%, 29%);
+  --warning-color: hsl(40, 92%, 40%);
+  --error-color: hsl(0, 84.2%, 60.2%);
+  --primary-button-background: transparent;
+  --primary-button-text: var(--text-primary);
+  --primary-button-border: var(--border-color);
+  --primary-button-hover: var(--hover-color);
+  --primary-button-active: var(--secondary-button-active);
+  --secondary-button-background: hsla(240, 4.8%, 95.9%, 0.9);
+  --secondary-button-hover: hsla(210, 8%, 90%, 0.9);
+  --secondary-button-active: hsla(210, 8%, 85%, 0.9);
+  --file-card-selected-border: hsla(211, 100%, 50%, 0.4);
+  --popover: hsla(0, 0%, 100%, 0.95);
+  --popover-foreground: hsl(0, 0%, 0%);
+
+  /* Component Sizing */
+  --button-height-sm: 22px;
+  --button-height-md: 26px;
+  --button-height-lg: 30px;
+  
+  /* Border radius */
+  --radius: 0.4rem;
+  --radius-full: 9999px;
+  
+  /* Focus ring */
+  --ring-color: hsl(211, 100%, 50%);
+  
+  /* Scrollbar */
+  --scrollbar-width: 6px;
+  --scrollbar-height: 6px;
+  --scrollbar-track-color: transparent;
+  --scrollbar-thumb-color: hsla(215, 14%, 80%, 0.6);
+  --scrollbar-thumb-hover-color: hsla(215, 14%, 70%, 0.8);
+  
+  /* Z-index layers */
+  --z-index-modal: 1000;
+  --z-index-dropdown: 100;
+  --z-index-tooltip: 50;
+  
+  /* Elevation (box-shadows) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.15);
+  
+  /* Backdrop blur for vibrancy */
+  --backdrop-blur-sm: blur(8px);
+  --backdrop-blur-md: blur(12px);
+  --backdrop-blur-lg: blur(16px);
+  
+  /* Font Sizes (reduced by ~25%) */
+  --font-size-xs: 0.65rem;
+  --font-size-sm: 0.75rem;
+  --font-size-md: 0.85rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.15rem;
+  
+  /* Component Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+}
+
+/* Dark theme variables - enhanced for better contrast and modern feel */
+.dark-mode {
+  --background-primary: hsla(220, 13%, 9%, 0.9);
+  --background-primary-dark: hsla(220, 13%, 9%, 0.95);
+  --background-secondary: hsla(220, 13%, 14%, 0.85);
+  --background-selected: hsla(222, 15%, 19%, 0.75);
+  --card-background: hsla(220, 13%, 9%, 0.85);
+  --card-foreground: hsl(0, 0%, 98%);
+  --accent-color: hsl(213, 30%, 60%);
+  --border-color: hsla(220, 13%, 18%, 0.8);
+  --hover-color: hsla(222, 15%, 22%, 0.8);
+  --text-primary: hsl(0, 0%, 98%);
+  --text-secondary: hsl(214, 15%, 72%);
+  --text-disabled: hsl(214, 15%, 50%);
+  --icon-color: hsl(214, 15%, 72%);
+  --primary-button-background: transparent;
+  --primary-button-text: var(--text-primary);
+  --primary-button-border: var(--border-color);
+  --primary-button-hover: var(--hover-color);
+  --primary-button-active: var(--secondary-button-active);
+  --secondary-button-background: hsla(222, 15%, 18%, 0.9);
+  --secondary-button-hover: hsla(222, 15%, 22%, 0.9);
+  --secondary-button-active: hsla(222, 15%, 27%, 0.9);
+  --file-card-selected-border: hsla(211, 100%, 65%, 0.5);
+  --scrollbar-thumb-color: hsla(220, 13%, 25%, 0.6);
+  --scrollbar-thumb-hover-color: hsla(220, 13%, 35%, 0.8);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --dropdown-menu-background: hsla(220, 13%, 9%, 0.95);
+  --dropdown-item-hover: hsla(222, 15%, 18%, 0.9);
+  --ring-color: hsl(211, 100%, 65%);
+}
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root,
+.dark-mode {
+  transition: 
+    color 0.15s ease-out,
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out,
+    box-shadow 0.15s ease-out;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  transition: background-color 0.15s ease-out, color 0.15s ease-out;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-height);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-color);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Global button style adjustments */
+button, 
+.button {
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
+}
+
+/* Input fields */
+input, 
+textarea, 
+select {
+  font-size: var(--font-size-sm);
+  padding: 0.25rem 0.5rem;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-rendering: auto;
+}
+
+/* Headings */
+h1 { font-size: var(--font-size-xl); }
+h2 { font-size: var(--font-size-lg); }
+h3 { font-size: var(--font-size-md); }
+h4, h5, h6 { font-size: var(--font-size-sm); }
+
+/* List items */
+li { font-size: var(--font-size-sm); }
+
+/* Tables */
+table { font-size: var(--font-size-sm); }
+
+/* Dialog/modal content */
+dialog, 
+.modal {
+  font-size: var(--font-size-sm);
+}

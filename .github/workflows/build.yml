@@ -1,0 +1,146 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Debug - Environment info
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Node: $(node -v)"
+          echo "NPM: $(npm -v)"
+          echo "Working directory: $(pwd)"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: List installed packages
+        run: npm list --depth=0
+
+      - name: Cache electron-builder cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Debug - Project structure before build
+        run: |
+          echo "Project structure:"
+          find . -type f -name "package.json" | xargs ls -la
+          cat package.json | grep -A 50 "\"build\":"
+          ls -la
+
+      - name: Build Vite app
+        run: npm run build
+
+      - name: Debug - Check dist directory after Vite build
+        run: |
+          echo "Dist directory contents:"
+          ls -la dist || echo "No dist directory found"
+
+      - name: Build and package macOS app with debug
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Running macOS packaging..."
+          npm run package:mac --verbose
+          echo "Package result:"
+          ls -la release-builds || echo "No release-builds directory found"
+          find release-builds -type f -name "*.dmg" -o -name "*.zip" || echo "No macOS packages found"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
+
+      - name: Build and package Windows app with debug
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "Running Windows packaging..."
+          npm run package:win --verbose
+          echo "Package result:"
+          dir release-builds || echo "No release-builds directory found"
+          dir /s /b release-builds\*.exe release-builds\*.msi || echo "No Windows packages found"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
+
+      - name: Build and package Linux app with debug
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "Running Linux packaging..."
+          npm run package:linux --verbose
+          echo "Package result:"
+          ls -la release-builds || echo "No release-builds directory found"
+          find release-builds -type f -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" || echo "No Linux packages found"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
+
+      - name: Debug - List all output files
+        run: |
+          echo "All potential release files:"
+          find . -type f -path "*/release-builds/*" || echo "No files found in release-builds"
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: release-builds/*.{dmg,zip}
+          if-no-files-found: warn
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: release-builds/*.{exe,msi}
+          if-no-files-found: warn
+
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: release-builds/*.{AppImage,deb,rpm}
+          if-no-files-found: warn
+
+      - name: Debug - Before release
+        run: |
+          echo "Current directory before release:"
+          pwd
+          echo "Files that will be included in release:"
+          ls -la release-builds || echo "No release-builds directory found"
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-builds/**
+          draft: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

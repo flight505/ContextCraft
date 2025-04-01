@@ -1,0 +1,30 @@
+.fileTreeHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--border-color);
+  height: 46px;
+  justify-content: center;
+}
+
+.fileTreeBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -1px;
+}
+
+.dropdownContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+}
+
+.excludedFilesCount {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+} 

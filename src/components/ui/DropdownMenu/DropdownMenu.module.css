@@ -1,0 +1,217 @@
+.dropdownMenu {
+  position: relative;
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.35rem 0.75rem;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  min-height: 28px;
+}
+
+.dropdownTrigger:hover:not(:disabled) {
+  background-color: var(--hover-color);
+}
+
+.dropdownTrigger:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring-color);
+}
+
+.dropdownTrigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdownTriggerOpen {
+  background-color: var(--hover-color);
+}
+
+.dropdownContent {
+  position: fixed;
+  min-width: 12rem;
+  width: max-content;
+  max-width: 300px;
+  padding: 0.5rem;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: dropdownIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  will-change: transform, opacity;
+}
+
+.dropdownContent.closing {
+  animation: dropdownOut 0.15s ease-in forwards;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: all 0.1s ease;
+  user-select: none;
+}
+
+.dropdownItem:hover:not(.disabled) {
+  background-color: var(--hover-color);
+}
+
+.itemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.itemText {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buttonLabel {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+  max-width: 220px;
+}
+
+.accordionIcon {
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  color: var(--text-secondary);
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+}
+
+.accordionIcon path:last-child {
+  transform-origin: center;
+  transition: opacity 0.2s ease;
+}
+
+.accordionIcon.rotated {
+  transform: rotate(180deg);
+}
+
+.accordionIcon.rotated path:last-child {
+  opacity: 0;
+}
+
+.sm {
+  height: 24px;
+  font-size: 10px;
+  padding: 0.2rem 0.5rem;
+}
+
+.md {
+  height: 28px;
+  font-size: 11px;
+  padding: 0.25rem 0.75rem;
+}
+
+.lg {
+  height: 32px;
+  font-size: 12px;
+  padding: 0.35rem 1rem;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.dropdownContent[data-side="top"] {
+  transform-origin: bottom;
+  animation: dropdownInTop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.dropdownContent[data-side="top"].closing {
+  animation: dropdownOutTop 0.15s ease-in forwards;
+}
+
+.dropdownContent[data-side="bottom"] {
+  transform-origin: top;
+}
+
+@keyframes dropdownInTop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownOutTop {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+@media (max-width: 768px) {
+  .dropdownContent {
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+:global(.dark) .dropdownContent {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark) .dropdownItem:hover:not(.disabled) {
+  background-color: var(--hover-color);
+}

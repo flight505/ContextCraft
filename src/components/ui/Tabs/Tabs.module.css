@@ -1,0 +1,120 @@
+/* Tabs component styling */
+.tabs {
+  width: 100%;
+  position: relative; /* Required for absolute positioning of children */
+}
+
+.tabsList {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0; /* Reduced margin for more compact layout */
+  background-color: var(--background-secondary);
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  padding: 4px 4px 0; /* Padding for tabs container */
+  gap: 2px; /* Small gap between tabs */
+}
+
+.tabsTrigger {
+  padding: 6px 12px;
+  background-color: var(--background-tertiary, rgba(0,0,0,0.05));
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  border-radius: 4px 4px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.tabsTrigger:hover:not(:disabled) {
+  color: var(--text-primary);
+  background-color: var(--background-hover, rgba(0,0,0,0.03));
+}
+
+.tabsTrigger.active {
+  color: var(--text-primary);
+  background-color: var(--background-primary);
+  border-color: var(--border-color);
+  border-bottom-color: var(--background-primary);
+  font-weight: 600;
+  z-index: 2; /* Ensure active tab is on top */
+}
+
+.tabsTrigger:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -1px;
+  z-index: 3;
+}
+
+.tabsTrigger:disabled {
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Tab content container - establishes the positioning context */
+.tabsContentWrapper {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  background-color: var(--background-primary);
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  overflow: hidden; /* Prevent content from bleeding out */
+}
+
+/* Individual tab content panel */
+.tabsContent {
+  padding: 12px; /* Slightly reduced padding */
+  outline: none;
+  transition: opacity 150ms ease-in-out;
+}
+
+/* Styles for active/inactive tab content */
+.activeContent {
+  opacity: 1;
+  z-index: 2;
+}
+
+.inactiveContent {
+  opacity: 0;
+  z-index: 1;
+  /* Position absolute was causing issues - we'll fix it differently */
+  display: none;
+  pointer-events: none;
+}
+
+/* Style for subheadings within merged tabs */
+.subHeading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border-color-subtle, rgba(128,128,128,0.3));
+}
+
+/* Style for divider within merged tabs */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 16px 0;
+}
+
+/* Add support for icons in tabs */
+.tabIcon {
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+} 

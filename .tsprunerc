@@ -1,0 +1,8 @@
+{
+  "project": "tsconfig.json",
+  "ignore": [
+    "src/types",
+    "src/declarations.d.ts",
+    "src/**/*.module.css.d.ts"
+  ]
+} 

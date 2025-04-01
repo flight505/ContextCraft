@@ -1,0 +1,105 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: var(--z-index-modal, 50);
+  backdrop-filter: blur(4px); /* Background blur */
+  animation: fadeIn 0.15s ease-out;
+}
+
+.dialog { /* Style the main dialog container */
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color); /* Added border */
+  border-radius: var(--radius-lg, 8px); /* Use variable or default */
+  box-shadow: var(--shadow-lg);
+  width: 90vw; /* Responsive width */
+  max-width: 500px; /* Default max-width (size 'md') */
+  max-height: 85vh;
+  display: flex; /* Use flexbox for layout */
+  flex-direction: column;
+  overflow: hidden; /* Prevent content overflow issues */
+  animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); /* Optional: entry animation */
+}
+
+/* Remove fixed positioning and transform, rely on backdrop flexbox for centering */
+/* .dialogContent { ... } */
+
+/* Size variants for .dialog */
+.sm {
+  max-width: 400px;
+}
+
+.md {
+  max-width: 500px; /* Consistent with above */
+}
+
+.lg {
+  max-width: 800px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+/* Removed .closeButton - handled by Button component */
+
+.description {
+  padding: 12px 20px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.content {
+  padding: 20px;
+  overflow-y: auto; /* Allow content to scroll if needed */
+  flex-grow: 1; /* Allow content to take available space */
+}
+
+.footer {
+  display: flex;
+  justify-content: center; /* Center buttons */
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

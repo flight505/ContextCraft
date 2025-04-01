@@ -1,0 +1,105 @@
+name: Build and Release with Code Signing
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache electron-builder cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      # Code signing setup for macOS
+      - name: Set up macOS code signing
+        if: matrix.os == 'macos-latest' && secrets.MACOS_CERTIFICATE
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE }}
+          p12-password: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          keychain: build.keychain
+          keychain-password: ${{ secrets.KEYCHAIN_PWD }}
+
+      # Code signing setup for Windows
+      - name: Set up Windows code signing
+        if: matrix.os == 'windows-latest' && secrets.WINDOWS_CERTIFICATE
+        uses: crazy-max/ghaction-import-pfx@v1
+        with:
+          pfx-base64: ${{ secrets.WINDOWS_CERTIFICATE }}
+          pfx-password: ${{ secrets.WINDOWS_CERTIFICATE_PWD }}
+
+      - name: Build Vite app
+        run: npm run build
+
+      - name: Build and package Electron app (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          NOTARIZE: ${{ secrets.NOTARIZE || 'false' }}
+
+      - name: Build and package Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PWD }}
+
+      - name: Build and package Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            release-builds/*.dmg
+            release-builds/*.exe
+            release-builds/*.AppImage
+            release-builds/*.deb
+          if-no-files-found: warn
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-builds/**
+          draft: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
