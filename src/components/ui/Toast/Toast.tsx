@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Toaster as SonnerToaster, toast, ExternalToast } from 'sonner';
+import { Toaster as SonnerToaster, toast } from 'sonner';
 import styles from './Toast.module.css';
 import { cn } from '../../../utils/cn';
 
@@ -50,20 +50,6 @@ export interface ToastProps {
 }
 
 /**
- * Component for terminal-like prefix
- */
-export const TerminalPrefix: React.FC = () => (
-  <span className={styles.terminalPrefix}>&gt;_</span>
-);
-
-/**
- * Component for file loading indicator
- */
-export const FileLoading: React.FC<{children?: React.ReactNode}> = ({ children }) => (
-  <span className={styles.fileLoading}>{children}</span>
-);
-
-/**
  * Toast component for displaying notifications using sonner
  */
 export const Toast: React.FC<ToastProps> = ({
@@ -79,7 +65,6 @@ export const Toast: React.FC<ToastProps> = ({
   
   // Check for dark mode
   useEffect(() => {
-    // Initial check
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains('dark-mode');
       setIsDarkMode(isDark);
@@ -99,8 +84,7 @@ export const Toast: React.FC<ToastProps> = ({
 
   return (
     <SonnerToaster
-      // Use 'light' theme always to let our CSS handle the theming
-      theme="light"
+      theme={isDarkMode ? 'dark' : 'light'}
       className={cn(styles.toaster, className)}
       position={position}
       gap={gap}
@@ -118,6 +102,7 @@ export const Toast: React.FC<ToastProps> = ({
           error: styles.error,
           warning: styles.warning,
           info: styles.info,
+          action: styles.action,
           actionButton: styles.actionButton,
           cancelButton: styles.cancelButton,
           closeButton: styles.closeButton,
@@ -127,91 +112,68 @@ export const Toast: React.FC<ToastProps> = ({
   );
 };
 
-// Toast helper functions
-type CommonToastOptions = Omit<ExternalToast, 'description'> & {
-  description?: React.ReactNode;
-};
-
-interface ToastPromiseOptions<T> {
-  loading: string;
-  success: (data: T) => string | React.ReactNode;
-  error: (error: Error) => string | React.ReactNode;
-}
-
+/**
+ * Helper functions to show different types of toasts
+ */
 export const showToast = {
-  success: (title: string, options?: CommonToastOptions) => {
-    return toast.success(title, options);
+  /**
+   * Show a default toast notification
+   */
+  default: (
+    title: string, 
+    description?: string, 
+    action?: { label: string; onClick: () => void }
+  ) => {
+    return toast(title, {
+      description,
+      action: action ? {
+        label: action.label,
+        onClick: action.onClick
+      } : undefined
+    });
   },
   
-  error: (title: string, options?: CommonToastOptions) => {
-    return toast.error(title, options);
+  /**
+   * Show a success toast notification
+   */
+  success: (title: string, description?: string) => {
+    return toast.success(title, { description });
   },
   
-  warning: (title: string, options?: CommonToastOptions) => {
-    return toast.warning(title, options);
+  /**
+   * Show an error toast notification
+   */
+  error: (title: string, description?: string) => {
+    return toast.error(title, { description });
   },
   
-  info: (title: string, options?: CommonToastOptions) => {
-    return toast.info(title, options);
+  /**
+   * Show a warning toast notification
+   */
+  warning: (title: string, description?: string) => {
+    return toast.warning(title, { description });
   },
   
+  /**
+   * Show an info toast notification
+   */
+  info: (title: string, description?: string) => {
+    return toast.info(title, { description });
+  },
+  
+  /**
+   * Show a loading toast that updates with promise resolution
+   */
   promise: <T,>(
     promise: Promise<T>,
-    messages: ToastPromiseOptions<T>,
-    options?: CommonToastOptions
+    messages: {
+      loading: string;
+      success: string | ((data: T) => string);
+      error: string | ((error: Error) => string);
+    },
+    options?: { description?: string }
   ) => {
-    // Merge messages and options to match Sonner's API
-    return toast.promise(
-      promise,
-      {
-        loading: messages.loading,
-        success: messages.success,
-        error: messages.error,
-        ...options
-      }
-    );
-  },
-  
-  fileLoading: (message: string, options?: CommonToastOptions) => {
-    return toast.info('Processing', {
-      ...options,
-      description: (
-        <>
-          <FileLoading />
-          <TerminalPrefix />{message}
-        </>
-      )
-    });
-  },
-  
-  fileComplete: (message: string, options?: CommonToastOptions) => {
-    return toast.success(message, options);
-  },
-  
-  fileError: (message: string, options?: CommonToastOptions) => {
-    return toast.error('Error', {
-      ...options,
-      description: (
-        <>
-          <TerminalPrefix />{message}
-        </>
-      )
-    });
-  },
-  
-  custom: (
-    title: string, 
-    options?: CommonToastOptions
-  ) => {
-    return toast(title, options);
-  },
-  
-  dismiss: (toastId?: string) => {
-    toast.dismiss(toastId);
-  },
-  
-  dismissAll: () => {
-    toast.dismiss();
+    return toast.promise(promise, messages, options);
   }
 };
 

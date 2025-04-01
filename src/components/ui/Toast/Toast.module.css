@@ -1,258 +1,150 @@
 .toaster {
-  --normal-width: 250px;
-  --mobile-width: 90vw;
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-index-tooltip);
+  width: auto;
 }
 
 .toast {
-  position: relative;
-  padding: 4px 8px;
-  max-width: var(--normal-width);
-  border-radius: 6px;
-  background-color: var(--background-primary, #ffffff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1), 
-              background-color 180ms ease,
-              box-shadow 180ms ease;
-}
-
-.toast:hover {
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-  background-color: var(--background-hover, #f9f9f9);
-  transform: translateY(-1px);
-}
-
-.success {
-  border-left: 3px solid var(--color-success, #22c55e);
-}
-
-.error {
-  border-left: 3px solid var(--color-error, #ef4444);
-}
-
-.warning {
-  border-left: 3px solid var(--color-warning, #f59e0b);
-}
-
-.info {
-  border-left: 3px solid var(--color-info, #3b82f6);
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  background-color: var(--card-background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius);
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  max-width: 350px;
+  width: 100%;
+  animation-duration: 150ms;
+  transition: all 0.2s ease;
 }
 
 .title {
-  font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #111827);
-  line-height: 1.15;
-  min-height: 1.15em;
+  font-size: var(--font-size-md);
+  line-height: 1.2;
+  color: var(--text-primary);
 }
 
 .description {
-  font-size: 0.8125rem;
-  color: var(--text-secondary, #374151);
-  line-height: 1.35;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
-.fileLoading {
-  display: inline-flex;
-  align-items: center;
+.toast:hover {
+  background-color: var(--card-background);
 }
 
-.fileLoading::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid var(--border-color, #e5e7eb);
-  border-bottom-color: var(--color-primary, #2563eb);
+/* Toast types */
+.success {
+  border-left: 4px solid var(--success-color);
+}
+
+.error {
+  border-left: 4px solid var(--error-color);
+}
+
+.warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.info {
+  border-left: 4px solid var(--accent-color);
+}
+
+/* Loader */
+.loader {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-bottom-color: var(--accent-color);
   border-radius: 50%;
   display: inline-block;
-  margin-right: 6px;
+  box-sizing: border-box;
   animation: rotation 1s linear infinite;
 }
 
 @keyframes rotation {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.terminalPrefix {
-  font-family: 'Courier New', Courier, monospace;
-  color: var(--text-secondary, #6b7280);
-  margin-right: 4px;
-  font-size: 0.8125rem;
-}
-
-.actionButton,
-.cancelButton {
-  position: relative;
-  align-self: flex-start;
-  padding: 2px 6px;
-  height: 22px;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  transition: background-color 150ms ease;
+/* Action buttons */
+.action {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
 }
 
 .actionButton {
-  color: var(--color-primary, #2563eb);
+  background-color: var(--primary-button-background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0 var(--spacing-sm);
+  height: var(--button-height-sm);
+  border-radius: var(--radius);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
   font-weight: 500;
+  transition: all 0.15s ease;
 }
 
 .actionButton:hover {
-  background-color: rgba(37, 99, 235, 0.08);
+  background-color: var(--primary-button-hover);
 }
 
 .cancelButton {
-  color: var(--text-secondary, #4b5563);
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0 var(--spacing-sm);
+  height: var(--button-height-sm);
+  border-radius: var(--radius);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 
 .cancelButton:hover {
-  background-color: rgba(75, 85, 99, 0.06);
-}
-
-.loader {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--color-primary, #2563eb);
-  opacity: 0.2;
-}
-
-.loader::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--color-primary, #2563eb);
-  transform-origin: left center;
-  animation: progress linear forwards;
+  background-color: var(--hover-color);
 }
 
 .closeButton {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 8px;
+  right: 8px;
+  padding: 0;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  transition: background-color 150ms ease, opacity 150ms ease;
-  opacity: 0.5;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
 .closeButton:hover {
-  background-color: rgba(0, 0, 0, 0.07);
-  opacity: 0.7;
+  opacity: 1;
 }
 
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-
-@keyframes progress {
-  0% {
-    transform: scaleX(0);
-  }
-  100% {
-    transform: scaleX(1);
-  }
-}
-
-.toast[data-mounted] {
-  animation: fadeIn 180ms cubic-bezier(0.2, 0, 0, 1) forwards;
-}
-
-.toast[data-removed] {
-  animation: fadeOut 120ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-:global(.dark-mode) .toast {
-  background-color: var(--background-secondary-dark, #1c1c1e);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-:global(.dark-mode) .toast:hover {
-  background-color: var(--background-hover-dark, #2c2c2e);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
-}
-
-:global(.dark-mode) .title {
-  color: var(--text-primary-dark, #f3f4f6);
-}
-
-:global(.dark-mode) .description {
-  color: var(--text-secondary-dark, #d1d5db);
-}
-
-:global(.dark-mode) .actionButton {
-  color: var(--color-primary-light, #60a5fa);
-}
-
-:global(.dark-mode) .actionButton:hover {
-  background-color: rgba(96, 165, 250, 0.15);
-}
-
-:global(.dark-mode) .cancelButton {
-  color: var(--text-secondary-dark, #9ca3af);
-}
-
-:global(.dark-mode) .cancelButton:hover {
-  background-color: rgba(156, 163, 175, 0.15);
-}
-
-:global(.dark-mode) .closeButton {
-  opacity: 0.6;
-}
-
-:global(.dark-mode) .closeButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  opacity: 0.8;
-}
-
-:global(.dark-mode) .fileLoading::before {
-  border-color: var(--border-color-dark, #2c2c2e);
-  border-bottom-color: var(--color-primary-light, #60a5fa);
-}
-
-:global(.dark-mode) .terminalPrefix {
-  color: var(--text-secondary-dark, #9ca3af);
-}
-
-@media (max-width: 480px) {
+/* Responsive adjustments */
+@media (max-width: 640px) {
   .toast {
-    max-width: var(--mobile-width);
+    max-width: 100%;
+    width: calc(100% - 32px);
   }
 } 
