@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Toaster as SonnerToaster, toast } from 'sonner';
+import { Toaster as SonnerToaster, toast, ExternalToast } from 'sonner';
 import styles from './Toast.module.css';
 import { cn } from '../../../utils/cn';
 
@@ -102,7 +102,6 @@ export const Toast: React.FC<ToastProps> = ({
           error: styles.error,
           warning: styles.warning,
           info: styles.info,
-          action: styles.action,
           actionButton: styles.actionButton,
           cancelButton: styles.cancelButton,
           closeButton: styles.closeButton,
@@ -112,6 +111,15 @@ export const Toast: React.FC<ToastProps> = ({
   );
 };
 
+// Common toast options type
+type CommonToastOptions = {
+  description?: React.ReactNode;
+  duration?: number;
+  important?: boolean;
+  onDismiss?: (toast: ExternalToast) => void;
+  onAutoClose?: (toast: ExternalToast) => void;
+};
+
 /**
  * Helper functions to show different types of toasts
  */
@@ -119,46 +127,36 @@ export const showToast = {
   /**
    * Show a default toast notification
    */
-  default: (
-    title: string, 
-    description?: string, 
-    action?: { label: string; onClick: () => void }
-  ) => {
-    return toast(title, {
-      description,
-      action: action ? {
-        label: action.label,
-        onClick: action.onClick
-      } : undefined
-    });
+  default: (title: string, options?: CommonToastOptions) => {
+    return toast(title, options);
   },
   
   /**
    * Show a success toast notification
    */
-  success: (title: string, description?: string) => {
-    return toast.success(title, { description });
+  success: (title: string, options?: CommonToastOptions) => {
+    return toast.success(title, options);
   },
   
   /**
    * Show an error toast notification
    */
-  error: (title: string, description?: string) => {
-    return toast.error(title, { description });
+  error: (title: string, options?: CommonToastOptions) => {
+    return toast.error(title, options);
   },
   
   /**
    * Show a warning toast notification
    */
-  warning: (title: string, description?: string) => {
-    return toast.warning(title, { description });
+  warning: (title: string, options?: CommonToastOptions) => {
+    return toast.warning(title, options);
   },
   
   /**
    * Show an info toast notification
    */
-  info: (title: string, description?: string) => {
-    return toast.info(title, { description });
+  info: (title: string, options?: CommonToastOptions) => {
+    return toast.info(title, options);
   },
   
   /**
@@ -166,14 +164,32 @@ export const showToast = {
    */
   promise: <T,>(
     promise: Promise<T>,
-    messages: {
+    options: {
       loading: string;
       success: string | ((data: T) => string);
       error: string | ((error: Error) => string);
-    },
-    options?: { description?: string }
+    }
   ) => {
-    return toast.promise(promise, messages, options);
+    return toast.promise(promise, options);
+  },
+  
+  /**
+   * Dismiss a specific toast by ID or all toasts if no ID provided
+   */
+  dismiss: (toastId?: string | number) => {
+    return toast.dismiss(toastId);
+  },
+  
+  /**
+   * Show a toast with a custom action button
+   */
+  withAction: (title: string, options: CommonToastOptions & { 
+    action: { 
+      label: string; 
+      onClick: () => void;
+    }
+  }) => {
+    return toast(title, options);
   }
 };
 

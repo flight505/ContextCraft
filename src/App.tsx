@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Sidebar from "./components/Sidebar";
 import FileList from "./components/FileList";
 import ControlContainer from "./components/ControlContainer";
@@ -25,6 +25,7 @@ import { ModelInfo } from "./types/ModelTypes"; // Import the new ModelInfo type
 import { compressCode, removeComments, getLanguageFromFilename } from './utils/compressionUtils'; // Import compression utils and getLanguageFromFilename
 // Import Toast component
 import { Toast, showToast } from './components/ui/Toast';
+import { toast } from 'sonner';
 
 // Keys for localStorage
 const STORAGE_KEYS = {
@@ -1545,24 +1546,102 @@ const App = () => {
     }));
   }, []);
 
+  // Define this ref outside of useEffect
+  const processingToastIds = useRef<{[key: string]: string | number}>({});
+  const fileOperationRef = useRef<{inProgress: boolean}>({ inProgress: false });
+
   // Update processing status handlers to include setTimeout for complete status
   useEffect(() => {
-    // Handle auto-dismissing 'complete' status messages
-    if (processingStatus.status === 'complete') {
-      // Show a success toast notification
-      showToast.success(processingStatus.message);
+    // Group related file operations (loading, finding, processing) into a single toast
+    const isFileOperation = processingStatus.message.includes('file') || 
+                            processingStatus.message.includes('File') ||
+                            processingStatus.message.includes('folder') ||
+                            processingStatus.message.includes('Folder');
+    
+    if (processingStatus.status === 'processing') {
+      // For file operations, update a single toast instead of creating multiple
+      if (isFileOperation) {
+        // If we have an existing file operation toast, dismiss it
+        if (processingToastIds.current['file-operation']) {
+          toast.dismiss(processingToastIds.current['file-operation']);
+        }
+        
+        // Create/update the file operation toast
+        fileOperationRef.current.inProgress = true;
+        processingToastIds.current['file-operation'] = showToast.info('Processing', { 
+          description: processingStatus.message 
+        });
+      } else {
+        // For other processing operations, create separate toasts
+        if (processingToastIds.current['processing']) {
+          toast.dismiss(processingToastIds.current['processing']);
+        }
+        
+        processingToastIds.current['processing'] = showToast.info('Processing', { 
+          description: processingStatus.message 
+        });
+      }
+    } 
+    // Handle completion status
+    else if (processingStatus.status === 'complete') {
+      // For file operations, only show one completion toast for the entire operation
+      if (isFileOperation) {
+        // Dismiss the file operation processing toast
+        if (processingToastIds.current['file-operation']) {
+          toast.dismiss(processingToastIds.current['file-operation']);
+          processingToastIds.current['file-operation'] = '';
+        }
+        
+        // Only show completion toast if this is the final step of a file operation
+        // Avoid showing "Found X files" followed immediately by "Loaded X files"
+        if (fileOperationRef.current.inProgress && 
+            (processingStatus.message.includes('Loaded') || !processingToastIds.current['file-complete'])) {
+          
+          // Reset the file operation flag since we're done
+          fileOperationRef.current.inProgress = false;
+          processingToastIds.current['file-complete'] = showToast.success(processingStatus.message);
+          
+          // Clear the file completion toast ID after a delay
+          setTimeout(() => {
+            processingToastIds.current['file-complete'] = '';
+          }, 5000);
+        }
+      } else {
+        // For other types of completion, dismiss related processing toast
+        if (processingToastIds.current['processing']) {
+          toast.dismiss(processingToastIds.current['processing']);
+          processingToastIds.current['processing'] = '';
+        }
+        
+        processingToastIds.current['complete'] = showToast.success(processingStatus.message);
+      }
       
       const timer = setTimeout(() => {
         setProcessingStatus({ status: 'idle', message: '' });
-      }, 5000); // Use 5000ms to match StatusAlert default
+      }, 5000);
       
       return () => clearTimeout(timer);
-    } else if (processingStatus.status === 'error') {
-      // Show an error toast notification
-      showToast.error('Error', processingStatus.message);
-    } else if (processingStatus.status === 'processing') {
-      // Show an info toast for processing
-      showToast.info('Processing', processingStatus.message);
+    } 
+    // Handle error status
+    else if (processingStatus.status === 'error') {
+      // Dismiss any existing processing toasts
+      if (processingToastIds.current['processing']) {
+        toast.dismiss(processingToastIds.current['processing']);
+        processingToastIds.current['processing'] = '';
+      }
+      
+      if (processingToastIds.current['file-operation']) {
+        toast.dismiss(processingToastIds.current['file-operation']);
+        processingToastIds.current['file-operation'] = '';
+      }
+      
+      // Reset file operation flag
+      fileOperationRef.current.inProgress = false;
+      
+      // Show error toast
+      processingToastIds.current['error'] = showToast.error('Error', { 
+        description: processingStatus.message 
+      });
     }
   }, [processingStatus.status, processingStatus.message]);
 

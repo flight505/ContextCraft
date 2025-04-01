@@ -23,7 +23,7 @@
 
 .excludedFilesCount {
   padding: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
