@@ -114,12 +114,12 @@ console.log("You can find your build files in the release-builds directory.");
 // Print helpful instructions
 console.log("\n📝 Next steps:");
 if (platform === "darwin") {
-  console.log("- To test the macOS app: open release-builds/PasteMax.app");
+  console.log("- To test the macOS app: open release-builds/ContextCraft.app");
   console.log("- To create a GitHub release, tag your commit and push:");
   console.log("  git tag v1.0.0");
   console.log("  git push origin v1.0.0");
 } else if (platform === "win32") {
-  console.log("- To test the Windows app: run release-builds\\PasteMax.exe");
+  console.log("- To test the Windows app: run release-builds\\ContextCraft.exe");
   console.log("- To create a GitHub release, tag your commit and push:");
   console.log("  git tag v1.0.0");
   console.log("  git push origin v1.0.0");
