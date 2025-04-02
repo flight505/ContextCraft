@@ -109,6 +109,7 @@ This **final** checklist ensures a **fully integrated** contextcraft, mirroring 
 - [ ] Improve error handling in file operations
 - [ ] Refactor codebase for better maintainability and organization
 - [ ] Implement Zustand for centralized state management
+- [ ] Fix TypeScript issues and improve type safety
 
 ## 📋 Planned
 
@@ -120,6 +121,11 @@ This **final** checklist ensures a **fully integrated** contextcraft, mirroring 
 - [ ] Create state slices for different domains (files, UI, settings, etc.)
 - [ ] Implement code splitting for improved performance
 - [ ] Modernize component architecture with composition patterns
+- [ ] Fix TypeScript ESLint version mismatch (current v5.8.2, supported <5.4.0)
+- [ ] Remove unnecessary `any` and `unknown` type usage
+- [ ] Clean up unused variables flagged by ESLint
+- [ ] Improve TypeScript configuration and strictness
+- [ ] Implement stronger typing for all components
 
 ## 🐛 Known Issues
 
@@ -128,6 +134,10 @@ This **final** checklist ensures a **fully integrated** contextcraft, mirroring 
 - [ ] Need better error messages for file operations
 - [ ] Improve type safety in some components
 - [ ] State management becomes complex with deeply nested components
+- [ ] TypeScript version mismatch with ESLint typescript-estree
+- [ ] Multiple unused variables in App.tsx and other components
+- [ ] Non-null assertions that could be made safer
+- [ ] Any type usage in electron.d.ts and react-app-env.d.ts
 
 ## 💡 Future Ideas
 - [ ] apply back to code base
