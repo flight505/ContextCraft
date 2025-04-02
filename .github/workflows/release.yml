@@ -33,18 +33,6 @@ jobs:
           npm install --legacy-peer-deps
           npm list electron electron-builder || true
 
-      - name: Cache electron-builder
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.os == 'macOS' && '~/.cache/electron' || '' }}
-            ${{ runner.os == 'macOS' && '~/.cache/electron-builder' || '' }}
-            ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\electron\Cache' || '' }}
-            ${{ runner.os == 'Windows' && 'C:\Users\runneradmin\AppData\Local\electron-builder\Cache' || '' }}
-          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-electron-builder-
-
       # Code signing setup for macOS
       - name: Import macOS certificates
         if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/')
