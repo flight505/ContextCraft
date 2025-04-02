@@ -99,10 +99,6 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
   const isBuildingTreeRef = useRef(false);
   const buildTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSelectedFilesRef = useRef<string[]>([]);
-  const [watcherStatus, setWatcherStatus] = useState<{ status: string | null, message: string | null }>({ 
-    status: null, 
-    message: null 
-  });
 
   // Cache the previous selected files to optimize render
   useEffect(() => {
@@ -542,34 +538,6 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
   const handleCloseIgnorePatterns = useCallback(() => {
     setIgnoreModalOpen(false);
   }, []);
-
-  // Setup listener for file processing status updates
-  useEffect(() => {
-    // Only set up listener if we're in Electron
-    if (!window.electron) return;
-
-    const handleFileProcessingStatus = (statusData: { status: string, message: string }) => {
-      if (statusData.status === 'warning' && statusData.message.includes('watcher')) {
-        setWatcherStatus({
-          status: 'warning',
-          message: statusData.message
-        });
-      }
-    };
-
-    window.electron.onFileProcessingStatus(handleFileProcessingStatus);
-    
-    return () => {
-      // No clean up needed as the API doesn't provide a way to unsubscribe
-    };
-  }, []);
-
-  // Display toast for watcher warnings
-  useEffect(() => {
-    if (watcherStatus.status === 'warning' && watcherStatus.message) {
-      showToast.error(watcherStatus.message);
-    }
-  }, [watcherStatus.status, watcherStatus.message]);
 
   return (
     <div className={styles.sidebar} style={{ width: `${sidebarWidth}px` }} data-testid="sidebar">

@@ -100,6 +100,55 @@ ContextCraft is a desktop application designed to help developers easily format 
 ### macOS
 Download the latest `.dmg` file from the [Releases](https://github.com/flight505/ContextCraft/releases) page
 
+#### Alternative Installation Method
+You can also download the `.zip` version instead of the `.dmg`. The ZIP version might be easier to open on some systems:
+1. Download the latest `ContextCraft-[version]-arm64-mac.zip`
+2. Double-click to extract it
+3. Drag the extracted ContextCraft app to your Applications folder
+4. Follow the same security bypass steps as with the DMG version
+
+#### Important Note About Security on macOS
+Since ContextCraft is not signed with an Apple Developer Certificate, you'll see a security warning when trying to open the app. This is normal and doesn't mean there's anything wrong with the application. To install:
+
+1. Download the `.dmg` file
+2. Double-click to mount the disk image
+3. Drag ContextCraft to your Applications folder
+4. When you first try to open the app, macOS will show a security warning
+5. To open the app:
+   - Right-click (or Control-click) ContextCraft in the Applications folder
+   - Select "Open" from the context menu
+   - Click "Open" in the security dialog
+   - You only need to do this once; subsequent launches will work normally
+
+Alternatively, you can:
+1. Open System Settings
+2. Go to Privacy & Security
+3. Scroll down to the "Security" section
+4. Click "Open Anyway" next to the message about ContextCraft
+
+**Why this happens**: Apple requires apps to be signed with an Apple Developer Certificate ($99/year) and notarized for best security. We've chosen to distribute ContextCraft without this certification to keep it free and open source. The app is still safe to use; you're just bypassing Apple's verification system.
+
+#### Installation Screenshots
+
+<details>
+<summary>Click to see what to expect during installation</summary>
+
+1. Initial Security Warning:
+   ```
+   "ContextCraft" cannot be opened because the developer cannot be verified.
+   macOS cannot verify that this app is free from malware.
+   ```
+   
+2. Opening from Context Menu:
+   - Right-click menu will show "Open" option
+   - A dialog will appear with an "Open" button
+   
+3. Privacy & Security Settings:
+   - Look for the message: "ContextCraft was blocked from use because it is not from an identified developer"
+   - Click "Open Anyway" button
+   
+Note: These screenshots are from macOS Sonoma. The exact appearance might vary slightly depending on your macOS version.
+</details>
 
 ## Quick Start
 
@@ -141,57 +190,19 @@ npm run package:linux
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Compleatly rewritten by me and AI and it is compleatly free and open source.
 
+For full disclosure, this is based on a video by Kevin Leneway, which you can find at https://www.youtube.com/@kevinleneway2290 
+Follow his channel for more great content!
 ---
 
 <div align="center">
   <p>Built with ❤️ using Electron and React</p>
 </div>
 
-# PasteMax
 
-## Updated Toast Component
+## Credits
 
-The Toast component has been improved with a modern design featuring:
-
-- Grid-based layout with icon on left, content in middle, close button on right
-- Frosted glass background effect
-- Thicker colored left border (5px) for better visibility
-- Theme compatibility (dark/light mode)
-- Directional shadows based on toast position
-- High-density option for compact UIs
-- Responsive layout
-
-### Usage Examples
-
-```tsx
-// Basic toast
-import { showToast } from './components/ui/Toast';
-
-showToast.success('File uploaded successfully');
-
-// With description
-showToast.info('System Update', 'A new version is available for installation');
-
-// With high-density option
-import Toast from './components/ui/Toast';
-
-// In your component:
-return (
-  <>
-    {/* Your app content */}
-    <Toast position="bottom-right" highDensity={true} />
-  </>
-);
-
-// Show toast with a promise
-showToast.promise(
-  fetch('/api/data'),
-  {
-    loading: 'Fetching data...',
-    success: 'Data loaded',
-    error: 'Failed to load data'
-  }
-);
-```
+- [Kevin Leneway](https://github.com/flight505) - Original author of the ContextCraft project
+- [ChatGPT](https://github.com/openai/chatgpt) - AI-powered code generation
+- [Cursor](https://github.com/cursor-ai/cursor) - AI-powered code generation

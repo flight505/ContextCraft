@@ -57,6 +57,21 @@ export interface ToastProps {
   highDensity?: boolean;
 }
 
+// Define the ToastClassnames interface to match our CSS modules
+interface ToastClassnames {
+  toast?: string;
+  title?: string;
+  description?: string;
+  success?: string;
+  error?: string;
+  warning?: string;
+  info?: string;
+  action?: string;
+  actionButton?: string;
+  cancelButton?: string;
+  closeButton?: string;
+}
+
 /**
  * Toast component for displaying notifications using sonner
  */
@@ -75,7 +90,7 @@ export const Toast: React.FC<ToastProps> = ({
   const isDarkMode = currentTheme === 'dark';
 
   // Custom close button with Lucide X icon
-  const CustomCloseButton = () => {
+  const CustomCloseButton: React.FC = () => {
     return (
       <button className={styles.closeButton} aria-label="Close toast">
         <X size={14} color="currentColor" />
@@ -106,113 +121,12 @@ export const Toast: React.FC<ToastProps> = ({
           actionButton: styles.actionButton,
           cancelButton: styles.cancelButton,
           closeButton: styles.closeButton,
-        },
-        // Force using our CSS variables instead of sonner's built-in styling
+        } as ToastClassnames,
         unstyled: true,
-        // Use custom close button with Lucide icon
-        closeButton: CustomCloseButton,
-        // Set icon to null to completely remove it
-        icon: null
+        closeButton: CustomCloseButton as unknown as boolean,
       }}
     />
   );
-};
-
-/**
- * Helper functions to show different types of toasts
- */
-export const showToast = {
-  /**
-   * Show a default toast notification
-   */
-  default: (
-    title: string, 
-    description?: string, 
-    action?: { label: string; onClick: () => void }
-  ) => {
-    return toast(title, {
-      description,
-      action: action ? {
-        label: action.label,
-        onClick: action.onClick
-      } : undefined,
-      // Set icon to null to completely remove it
-      icon: null,
-      // Apply custom class for better centering of single-line toasts
-      className: !description ? styles.singleLineToast : ''
-    });
-  },
-  
-  /**
-   * Show a success toast notification
-   */
-  success: (title: string, description?: string) => {
-    return toast.success(title, { 
-      description,
-      // Set icon to null to completely remove it
-      icon: null,
-      // Apply custom class for better centering of single-line toasts
-      className: !description ? styles.singleLineToast : ''
-    });
-  },
-  
-  /**
-   * Show an error toast notification
-   */
-  error: (title: string, description?: string) => {
-    return toast.error(title, { 
-      description,
-      // Set icon to null to completely remove it
-      icon: null,
-      // Apply custom class for better centering of single-line toasts
-      className: !description ? styles.singleLineToast : ''
-    });
-  },
-  
-  /**
-   * Show a warning toast notification
-   */
-  warning: (title: string, description?: string) => {
-    return toast.warning(title, { 
-      description,
-      // Set icon to null to completely remove it
-      icon: null,
-      // Apply custom class for better centering of single-line toasts
-      className: !description ? styles.singleLineToast : ''
-    });
-  },
-  
-  /**
-   * Show an info toast notification
-   */
-  info: (title: string, description?: string) => {
-    return toast.info(title, { 
-      description,
-      // Set icon to null to completely remove it
-      icon: null,
-      // Apply custom class for better centering of single-line toasts
-      className: !description ? styles.singleLineToast : ''
-    });
-  },
-  
-  /**
-   * Show a promise toast that updates with promise resolution
-   */
-  promise: <T,>(
-    promise: Promise<T>,
-    messages: {
-      loading: string;
-      success: string | ((data: T) => string);
-      error: string | ((error: Error) => string);
-    },
-    options?: { description?: string }
-  ) => {
-    const opts = {
-      ...options,
-      icon: null
-    };
-    return toast.promise(promise, messages, opts);
-  }
 };
 
 export default Toast; 
