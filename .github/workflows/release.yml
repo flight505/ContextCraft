@@ -32,7 +32,6 @@ jobs:
           npm install --legacy-peer-deps
           npm list electron electron-builder || true
 
-      # Code signing setup for macOS
       - name: Import macOS certificates
         if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/')
         env:
