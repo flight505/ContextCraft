@@ -1,21 +1,37 @@
-name: Build and Release
+name: Build and Release CI
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+    tags:
+      - 'v*' # Trigger on version tags
   pull_request:
     branches:
       - main
 
 jobs:
-  release:
+  build_and_maybe_release:
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-latest
+            package_cmd: npm run package:mac --verbose
+            artifact_pattern: release-builds/ContextCraft*.{dmg,zip}
+            release_glob: |
+              release-builds/ContextCraft*.dmg
+              release-builds/ContextCraft*.zip
+          - os: windows-latest
+            package_cmd: npm run package:win --verbose
+            artifact_pattern: release-builds/ContextCraft*.{exe,msi}
+            release_glob: release-builds/ContextCraft*.exe
+          - os: ubuntu-latest
+            package_cmd: npm run package:linux --verbose
+            artifact_pattern: release-builds/ContextCraft*.{AppImage,deb,rpm}
+            release_glob: release-builds/ContextCraft*.AppImage
 
     steps:
       - name: Check out Git repository
@@ -25,6 +41,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'
 
       - name: Debug - Environment info
         run: |
@@ -36,148 +53,61 @@ jobs:
           echo "Ref: ${{ github.ref }}"
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
+        continue-on-error: false
 
       - name: List installed packages
-        run: npm list --depth=0
-
-      - name: Cache electron-builder cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-electron-builder-
-
-      - name: Debug - Project structure before build (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "Project structure:"
-          find . -type f -name "package.json" | xargs ls -la
-          cat package.json | grep -A 50 "\"build\":"
-          ls -la
-
-      - name: Debug - Project structure before build (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "Project structure:"
-          Get-ChildItem -Path . -Recurse -Filter "package.json" | ForEach-Object { Get-ChildItem -Path $_.FullName }
-          Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
-          Get-ChildItem -Force
+        run: npm list --depth=0 || true
 
       - name: Build Vite app
         run: npm run build
+        env:
+          CI: true
 
-      - name: Debug - Check dist directory after Vite build (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "Dist directory contents:"
-          ls -la dist || echo "No dist directory found"
-
-      - name: Debug - Check dist directory after Vite build (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "Dist directory contents:"
-          if (Test-Path -Path dist) { Get-ChildItem -Path dist -Force } else { echo "No dist directory found" }
-
-      - name: Build and package macOS app with debug
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "Running macOS packaging..."
-          npm run package:mac --verbose
-          echo "Package result:"
-          ls -la release-builds || echo "No release-builds directory found"
-          find release-builds -type f -name "*.dmg" -o -name "*.zip" || echo "No macOS packages found"
+      - name: Package Application
+        run: ${{ matrix.package_cmd }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Disable macOS code signing
+          CSC_IDENTITY_AUTO_DISCOVERY: false
           DEBUG: electron-builder
 
-      - name: Build and package Windows app with debug
-        if: matrix.os == 'windows-latest'
+      - name: List Build Output (Unix)
+        if: runner.os != 'Windows'
         run: |
-          echo "Running Windows packaging..."
-          npm run package:win --verbose
-          echo "Package result:"
+          echo "Listing output in release-builds..."
+          ls -lha release-builds/ || echo "release-builds directory not found or empty."
+          echo "Finding specific files..."
+          find . -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" || echo "No expected artifacts found."
+        shell: bash
+
+      - name: List Build Output (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "Listing output in release-builds..."
           if (Test-Path -Path release-builds) { 
-            Get-ChildItem -Path release-builds -Force
-            Get-ChildItem -Path release-builds -Recurse -Include "*.exe","*.msi"
+            Get-ChildItem -Path release-builds -Force 
           } else { 
-            echo "No release-builds directory found"
+            echo "release-builds directory not found or empty."
           }
+          echo "Finding specific files..."
+          Get-ChildItem -Path . -Recurse -Include "*.dmg","*.zip","*.exe","*.msi","*.AppImage","*.deb","*.rpm" -ErrorAction SilentlyContinue
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-build
+          path: ${{ matrix.artifact_pattern }}
+          if-no-files-found: warn
+
+      # Release step - Only run on tags
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ matrix.release_glob }}
+          fail_on_unmatched_files: false # Set to false during debugging, true once stable
+          draft: true
+          generate_release_notes: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: electron-builder
-
-      - name: Build and package Linux app with debug
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          echo "Running Linux packaging..."
-          npm run package:linux --verbose
-          echo "Package result:"
-          ls -la release-builds || echo "No release-builds directory found"
-          find release-builds -type f -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" || echo "No Linux packages found"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: electron-builder
-
-      - name: Debug - List all output files (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "All potential release files:"
-          find . -type f -path "*/release-builds/*" || echo "No files found in release-builds"
-
-      - name: Debug - List all output files (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "All potential release files:"
-          if (Test-Path -Path release-builds) {
-            Get-ChildItem -Path release-builds -Recurse | Where-Object { !$_.PSIsContainer }
-          } else {
-            echo "No files found in release-builds"
-          }
-
-      - name: Upload macOS artifacts
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-artifacts
-          path: release-builds/*.{dmg,zip}
-          if-no-files-found: warn
-
-      - name: Upload Windows artifacts
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-artifacts
-          path: release-builds/*.{exe,msi}
-          if-no-files-found: warn
-
-      - name: Upload Linux artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-artifacts
-          path: release-builds/*.{AppImage,deb,rpm}
-          if-no-files-found: warn
-
-      - name: Debug - Before release (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "Current directory before release:"
-          pwd
-          echo "Files that will be included in release:"
-          ls -la release-builds || echo "No release-builds directory found"
-
-      - name: Debug - Before release (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "Current directory before release:"
-          Get-Location
-          echo "Files that will be included in release:"
-          if (Test-Path -Path release-builds) {
-            Get-ChildItem -Path release-builds -Force
-          } else {
-            echo "No release-builds directory found"
-          }
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
