@@ -567,7 +567,7 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
   // Display toast for watcher warnings
   useEffect(() => {
     if (watcherStatus.status === 'warning' && watcherStatus.message) {
-      showToast.fileError(watcherStatus.message);
+      showToast.error(watcherStatus.message);
     }
   }, [watcherStatus.status, watcherStatus.message]);
 

@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Toaster as SonnerToaster, toast } from 'sonner';
+import { X } from 'lucide-react';
 import styles from './Toast.module.css';
 import { cn } from '../../../utils/cn';
+import { useTheme } from '../../../hooks/useTheme';
 
 /**
  * Properties for Toast component
@@ -15,13 +17,13 @@ export interface ToastProps {
   
   /**
    * Gap between toast notifications
-   * @default 8
+   * @default 6
    */
   gap?: number;
   
   /**
    * Optional toast visibility duration in milliseconds
-   * @default 4000
+   * @default 3000
    */
   duration?: number;
   
@@ -44,9 +46,15 @@ export interface ToastProps {
 
   /**
    * Offset from the edges of the screen in pixels
-   * @default 16
+   * @default 12
    */
   offset?: number | string;
+  
+  /**
+   * Use high-density layout (40px height instead of 50px)
+   * @default false
+   */
+  highDensity?: boolean;
 }
 
 /**
@@ -54,33 +62,26 @@ export interface ToastProps {
  */
 export const Toast: React.FC<ToastProps> = ({
   position = 'bottom-right',
-  gap = 8,
-  duration = 4000,
+  gap = 6,
+  duration = 3000,
   className,
   closeButton = true,
   visibleToasts = 5,
-  offset = 16,
+  offset = 12,
+  highDensity = false,
 }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  
-  // Check for dark mode
-  useEffect(() => {
-    const checkDarkMode = () => {
-      const isDark = document.documentElement.classList.contains('dark-mode');
-      setIsDarkMode(isDark);
-    };
-    
-    checkDarkMode();
-    
-    // Observer for theme changes
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, { 
-      attributes: true, 
-      attributeFilter: ['class'] 
-    });
-    
-    return () => observer.disconnect();
-  }, []);
+  // Use the theme context to get the current theme
+  const { currentTheme } = useTheme();
+  const isDarkMode = currentTheme === 'dark';
+
+  // Custom close button with Lucide X icon
+  const CustomCloseButton = () => {
+    return (
+      <button className={styles.closeButton} aria-label="Close toast">
+        <X size={14} color="currentColor" />
+      </button>
+    );
+  };
 
   return (
     <SonnerToaster
@@ -94,10 +95,9 @@ export const Toast: React.FC<ToastProps> = ({
       offset={offset}
       toastOptions={{
         classNames: {
-          toast: styles.toast,
+          toast: cn(styles.toast, highDensity && styles.highDensity),
           title: styles.title,
           description: styles.description,
-          loader: styles.loader,
           success: styles.success,
           error: styles.error,
           warning: styles.warning,
@@ -106,7 +106,13 @@ export const Toast: React.FC<ToastProps> = ({
           actionButton: styles.actionButton,
           cancelButton: styles.cancelButton,
           closeButton: styles.closeButton,
-        }
+        },
+        // Force using our CSS variables instead of sonner's built-in styling
+        unstyled: true,
+        // Use custom close button with Lucide icon
+        closeButton: CustomCloseButton,
+        // Set icon to null to completely remove it
+        icon: null
       }}
     />
   );
@@ -129,7 +135,11 @@ export const showToast = {
       action: action ? {
         label: action.label,
         onClick: action.onClick
-      } : undefined
+      } : undefined,
+      // Set icon to null to completely remove it
+      icon: null,
+      // Apply custom class for better centering of single-line toasts
+      className: !description ? styles.singleLineToast : ''
     });
   },
   
@@ -137,32 +147,56 @@ export const showToast = {
    * Show a success toast notification
    */
   success: (title: string, description?: string) => {
-    return toast.success(title, { description });
+    return toast.success(title, { 
+      description,
+      // Set icon to null to completely remove it
+      icon: null,
+      // Apply custom class for better centering of single-line toasts
+      className: !description ? styles.singleLineToast : ''
+    });
   },
   
   /**
    * Show an error toast notification
    */
   error: (title: string, description?: string) => {
-    return toast.error(title, { description });
+    return toast.error(title, { 
+      description,
+      // Set icon to null to completely remove it
+      icon: null,
+      // Apply custom class for better centering of single-line toasts
+      className: !description ? styles.singleLineToast : ''
+    });
   },
   
   /**
    * Show a warning toast notification
    */
   warning: (title: string, description?: string) => {
-    return toast.warning(title, { description });
+    return toast.warning(title, { 
+      description,
+      // Set icon to null to completely remove it
+      icon: null,
+      // Apply custom class for better centering of single-line toasts
+      className: !description ? styles.singleLineToast : ''
+    });
   },
   
   /**
    * Show an info toast notification
    */
   info: (title: string, description?: string) => {
-    return toast.info(title, { description });
+    return toast.info(title, { 
+      description,
+      // Set icon to null to completely remove it
+      icon: null,
+      // Apply custom class for better centering of single-line toasts
+      className: !description ? styles.singleLineToast : ''
+    });
   },
   
   /**
-   * Show a loading toast that updates with promise resolution
+   * Show a promise toast that updates with promise resolution
    */
   promise: <T,>(
     promise: Promise<T>,
@@ -173,7 +207,11 @@ export const showToast = {
     },
     options?: { description?: string }
   ) => {
-    return toast.promise(promise, messages, options);
+    const opts = {
+      ...options,
+      icon: null
+    };
+    return toast.promise(promise, messages, opts);
   }
 };
 

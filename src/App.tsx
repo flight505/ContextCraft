@@ -1551,11 +1551,11 @@ const App = () => {
   useEffect(() => {
     if (processingStatus.status === 'processing') {
       // For processing status
-      showToast.fileLoading(processingStatus.message);
+      showToast.info(processingStatus.message);
     } 
     else if (processingStatus.status === 'complete') {
       // For completion status
-      showToast.fileComplete(processingStatus.message);
+      showToast.success(processingStatus.message);
       
       // Auto-reset to idle after a delay
       const timer = setTimeout(() => {
@@ -1566,7 +1566,7 @@ const App = () => {
     }
     else if (processingStatus.status === 'error') {
       // For error status
-      showToast.fileError(processingStatus.message);
+      showToast.error(processingStatus.message);
     }
   }, [processingStatus.status, processingStatus.message]);
 

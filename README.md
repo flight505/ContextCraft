@@ -148,3 +148,50 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <div align="center">
   <p>Built with ❤️ using Electron and React</p>
 </div>
+
+# PasteMax
+
+## Updated Toast Component
+
+The Toast component has been improved with a modern design featuring:
+
+- Grid-based layout with icon on left, content in middle, close button on right
+- Frosted glass background effect
+- Thicker colored left border (5px) for better visibility
+- Theme compatibility (dark/light mode)
+- Directional shadows based on toast position
+- High-density option for compact UIs
+- Responsive layout
+
+### Usage Examples
+
+```tsx
+// Basic toast
+import { showToast } from './components/ui/Toast';
+
+showToast.success('File uploaded successfully');
+
+// With description
+showToast.info('System Update', 'A new version is available for installation');
+
+// With high-density option
+import Toast from './components/ui/Toast';
+
+// In your component:
+return (
+  <>
+    {/* Your app content */}
+    <Toast position="bottom-right" highDensity={true} />
+  </>
+);
+
+// Show toast with a promise
+showToast.promise(
+  fetch('/api/data'),
+  {
+    loading: 'Fetching data...',
+    success: 'Data loaded',
+    error: 'Failed to load data'
+  }
+);
+```
