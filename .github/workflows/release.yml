@@ -32,32 +32,6 @@ jobs:
           npm install --legacy-peer-deps
           npm list electron electron-builder || true
 
-      - name: Import macOS certificates
-        if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/')
-        env:
-          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
-          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-          KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD || 'tempkeychain' }}
-        run: |
-          # Create temporary keychain
-          security create-keychain -p "$KEYCHAIN_PWD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PWD" build.keychain
-          
-          # Import certificate to keychain
-          echo "$MACOS_CERTIFICATE" | base64 -D > certificate.p12
-          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
-          
-          # Add keychain to keychain-list
-          security list-keychains -s build.keychain
-          security set-keychain-settings -t 3600 -l build.keychain
-          
-          # Allow codesign to access keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" build.keychain
-          
-          # Verify certificate import
-          security find-identity -v -p codesigning build.keychain
-
       - name: Build Vite app
         run: npm run build
         env:
@@ -70,10 +44,7 @@ jobs:
           npm run package:mac --verbose
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
           DEBUG: electron-builder,electron-builder:*
 
       - name: Build for Windows
