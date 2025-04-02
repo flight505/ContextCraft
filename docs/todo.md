@@ -1,46 +1,24 @@
 # PasteMax Todo List
 
-Help that can be used to finish the tasks and application. 
-The old pastemax repo is here: https://github.com/kleneway/pastemax/pull/16/commits fix: improve directory loading and path handling#16 not compleatly impllimented into the new repo yet. 
-and https://github.com/kleneway/pastemax/pull/20 (Fixed Reload, Folder Select/Deselect automatically select/deselect all files in it (WINDOWS 11), Improved Project loading, improved path normalisation) #20
-also the old repo has a lot of testing and other stuff that can be used to solve some issues in the new repo. 
+Here's what we learned during this process:
 
-repomix is a tool very similar to pastemax but focused on CLI were pastemax is a electron app. 
-the url is https://github.com/yamadashy/repomix we are taking a lot of inspiration from this project. 
+1. Electron packaging requires careful handling of dependencies, especially for native modules like tree-sitter
+2. The dependency chain is deeper than it appears - modules like micromatch depend on braces, which depends on fill-range, which depends on to-regex-range, which depends on is-number
+3. Native modules like tree-sitter have special dependencies like node-gyp-build that aren't always detected by simple dependency analysis
 
-We have a test repo with depth of 4 levels and 15 directories and 13 files.
-the url is https://github.com/flight505/test-project it is public and will be used for testing.
-The test repo tree is like this:
-.
-├── docs
-│   └── README.md
-├── src
-│   ├── components
-│   │   └── Button.tsx
-│   ├── styles
-│   │   └── Button.css
-│   └── utils
-│       └── helpers.ts
-├── test-data
-│   ├── branch1
-│   │   ├── branch2
-│   │   │   └── branchfile2.txt
-│   │   └── branchfile1.txt
-│   ├── file0.txt
-│   └── level1
-│       ├── branch1-1
-│       │   └── branchfile1-1.txt
-│       ├── file1.txt
-│       └── level2
-│           ├── file2.txt
-│           └── level3
-│               ├── file3.txt
-│               └── level4
-│                   └── file4.txt
-└── tests
-    └── helpers.test.ts
+For future maintenance:
 
-15 directories, 13 files
+1. Keep your current approach of incrementally adding dependencies as needed to maintain a reasonable app size
+2. Your postinstall script with `electron-builder install-app-deps` is crucial for rebuilding native modules
+3. When adding new native modules to your app, be aware you might need to explicitly add their dependencies to the extraResources filter
+
+The final solution combined:
+- Targeted dependency inclusion
+- Proper handling of native modules
+- Maintaining a reasonable app size (around 120MB vs 1GB)
+
+This approach is more maintainable than the "include everything" approach, even though it required a bit more debugging. Your app should now run reliably while keeping its size optimized.
+
 
 
 # **PasteMax + Repomix-Style: Final Very Detailed Implementation Checklist (Electron Integration)**
