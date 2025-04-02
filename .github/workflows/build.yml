@@ -51,20 +51,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-electron-builder-
 
-      - name: Debug - Project structure before build
+      - name: Debug - Project structure before build (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "Project structure:"
           find . -type f -name "package.json" | xargs ls -la
           cat package.json | grep -A 50 "\"build\":"
           ls -la
 
+      - name: Debug - Project structure before build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "Project structure:"
+          Get-ChildItem -Path . -Recurse -Filter "package.json" | ForEach-Object { Get-ChildItem -Path $_.FullName }
+          Get-Content package.json | Select-String -Pattern "\"build\":" -Context 0,50
+          Get-ChildItem -Force
+
       - name: Build Vite app
         run: npm run build
 
-      - name: Debug - Check dist directory after Vite build
+      - name: Debug - Check dist directory after Vite build (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "Dist directory contents:"
           ls -la dist || echo "No dist directory found"
+
+      - name: Debug - Check dist directory after Vite build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "Dist directory contents:"
+          if (Test-Path -Path dist) { Get-ChildItem -Path dist -Force } else { echo "No dist directory found" }
 
       - name: Build and package macOS app with debug
         if: matrix.os == 'macos-latest'
@@ -84,8 +100,12 @@ jobs:
           echo "Running Windows packaging..."
           npm run package:win --verbose
           echo "Package result:"
-          dir release-builds || echo "No release-builds directory found"
-          dir /s /b release-builds\*.exe release-builds\*.msi || echo "No Windows packages found"
+          if (Test-Path -Path release-builds) { 
+            Get-ChildItem -Path release-builds -Force
+            Get-ChildItem -Path release-builds -Recurse -Include "*.exe","*.msi"
+          } else { 
+            echo "No release-builds directory found"
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: electron-builder
@@ -102,10 +122,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: electron-builder
 
-      - name: Debug - List all output files
+      - name: Debug - List all output files (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "All potential release files:"
           find . -type f -path "*/release-builds/*" || echo "No files found in release-builds"
+
+      - name: Debug - List all output files (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "All potential release files:"
+          if (Test-Path -Path release-builds) {
+            Get-ChildItem -Path release-builds -Recurse | Where-Object { !$_.PSIsContainer }
+          } else {
+            echo "No files found in release-builds"
+          }
 
       - name: Upload macOS artifacts
         if: matrix.os == 'macos-latest'
@@ -131,9 +162,22 @@ jobs:
           path: release-builds/*.{AppImage,deb,rpm}
           if-no-files-found: warn
 
-      - name: Debug - Before release
+      - name: Debug - Before release (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "Current directory before release:"
           pwd
           echo "Files that will be included in release:"
           ls -la release-builds || echo "No release-builds directory found"
+
+      - name: Debug - Before release (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "Current directory before release:"
+          Get-Location
+          echo "Files that will be included in release:"
+          if (Test-Path -Path release-builds) {
+            Get-ChildItem -Path release-builds -Force
+          } else {
+            echo "No release-builds directory found"
+          }
