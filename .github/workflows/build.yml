@@ -64,7 +64,7 @@ jobs:
         run: |
           echo "Project structure:"
           Get-ChildItem -Path . -Recurse -Filter "package.json" | ForEach-Object { Get-ChildItem -Path $_.FullName }
-          Get-Content package.json | Select-String -Pattern "\"build\":" -Context 0,50
+          Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
           Get-ChildItem -Force
 
       - name: Build Vite app
@@ -170,10 +170,14 @@ jobs:
           echo "Files that will be included in release:"
           ls -la release-builds || echo "No release-builds directory found"
 
-      - name: Debug - Project structure before build (Windows)
+      - name: Debug - Before release (Windows)
         if: runner.os == 'Windows'
         run: |
-          echo "Project structure:"
-          Get-ChildItem -Path . -Recurse -Filter "package.json" | ForEach-Object { Get-ChildItem -Path $_.FullName }
-          Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
-          Get-ChildItem -Force
+          echo "Current directory before release:"
+          Get-Location
+          echo "Files that will be included in release:"
+          if (Test-Path -Path release-builds) {
+            Get-ChildItem -Path release-builds -Force
+          } else {
+            echo "No release-builds directory found"
+          }
