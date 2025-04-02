@@ -251,7 +251,7 @@ const BINARY_EXTENSIONS = [
 ].concat(binaryExtensions || []); // Add any additional binary extensions from excluded-files.js
 
 // Max file size to read (5MB)
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 // Global reference to the mainWindow to prevent garbage collection
 let mainWindow;
