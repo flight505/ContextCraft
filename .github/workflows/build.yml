@@ -21,18 +21,25 @@ jobs:
         include:
           - os: macos-latest
             package_cmd: npm run package:mac --verbose
-            artifact_pattern: release-builds/ContextCraft*.{dmg,zip}
+            artifact_pattern: |
+              release-builds/**/*.dmg
+              release-builds/**/*.zip
             release_glob: |
-              release-builds/ContextCraft*.dmg
-              release-builds/ContextCraft*.zip
+              release-builds/**/*.dmg
+              release-builds/**/*.zip
           - os: windows-latest
             package_cmd: npm run package:win --verbose
-            artifact_pattern: release-builds/ContextCraft*.{exe,msi}
-            release_glob: release-builds/ContextCraft*.exe
+            artifact_pattern: |
+              release-builds/**/*.exe
+              release-builds/**/*.msi
+            release_glob: release-builds/**/*.exe
           - os: ubuntu-latest
             package_cmd: npm run package:linux --verbose
-            artifact_pattern: release-builds/ContextCraft*.{AppImage,deb,rpm}
-            release_glob: release-builds/ContextCraft*.AppImage
+            artifact_pattern: |
+              release-builds/**/*.AppImage
+              release-builds/**/*.deb
+              release-builds/**/*.rpm
+            release_glob: release-builds/**/*.AppImage
 
     steps:
       - name: Check out Git repository
