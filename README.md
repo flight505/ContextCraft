@@ -10,7 +10,7 @@
 ContextCraft is a desktop application designed to help developers easily format and export their code for sharing with AI models like Claude, ChatGPT, and others. It provides an intuitive interface to select specific files from your project, generate file trees, add custom instructions, and export everything in a well-formatted manner that preserves context.
 
 <div align="center">
- <img width="1028" alt="ContextCraft Interface" src="https://github.com/user-attachments/assets/93722108-6a85-441b-9514-286c4dde622c" />
+ <img width="720" alt="ContextCraft Interface" src="https://github.com/user-attachments/assets/93722108-6a85-441b-9514-286c4dde622c" />
 </div>
 ## Features
 
