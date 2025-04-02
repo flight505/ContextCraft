@@ -11,7 +11,12 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest]  # Focusing on macOS for now
+        os: [macos-latest, windows-latest]  # Build for both macOS and Windows
+        include:
+          - os: macos-latest
+            output_path: release-builds/*.{dmg,zip}
+          - os: windows-latest
+            output_path: release-builds/*.{exe,msi}
 
     steps:
       - name: Check out Git repository
@@ -34,6 +39,7 @@ jobs:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
+            ${{ runner.os == 'Windows' && '\AppData\Local\electron-builder' || '' }}
           key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-electron-builder-
@@ -90,19 +96,33 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           DEBUG: electron-builder,electron-builder:*
 
+      - name: Build for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          # Debug info
+          echo "Current directory: $pwd"
+          dir
+          echo "Dist directory contents:"
+          dir dist || echo "No dist directory"
+          
+          # Run the build with verbose logging
+          npm run package:win --verbose
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder,electron-builder:*
+
       - name: Verify build output
         run: |
           echo "Release builds directory contents:"
           ls -la release-builds || echo "No release-builds directory"
-          find . -name "*.dmg" -o -name "*.zip"
+          find . -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.msi"
+        shell: bash
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-artifacts
-          path: |
-            release-builds/*.dmg
-            release-builds/*.zip
+          name: ${{ matrix.os }}-artifacts
+          path: ${{ matrix.output_path }}
           if-no-files-found: error
 
       - name: Create Release
@@ -112,6 +132,8 @@ jobs:
           files: |
             release-builds/*.dmg
             release-builds/*.zip
+            release-builds/*.exe
+            release-builds/*.msi
           draft: true
           generate_release_notes: true
           fail_on_unmatched_files: true
