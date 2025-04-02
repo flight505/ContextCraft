@@ -25,7 +25,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: "npm"
 
       - name: Debug - Environment info
         run: |
@@ -37,7 +36,7 @@ jobs:
           echo "Ref: ${{ github.ref }}"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: List installed packages
         run: npm list --depth=0
