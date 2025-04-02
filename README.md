@@ -150,6 +150,33 @@ Alternatively, you can:
 Note: These screenshots are from macOS Sonoma. The exact appearance might vary slightly depending on your macOS version.
 </details>
 
+### Windows
+Download the latest Windows build from the [Releases](https://github.com/flight505/ContextCraft/releases) page. You have two options:
+
+#### Option 1: Standard Installation (Recommended)
+1. Download `ContextCraft-[version]-x64-setup.exe`
+2. Double-click the installer
+3. Follow the installation wizard
+4. The app will be installed in your Program Files directory
+5. Launch from the Start Menu or desktop shortcut
+
+#### Option 2: Portable Version
+1. Download `ContextCraft-[version]-x64-portable.exe`
+2. Move the .exe file to your preferred location
+3. Double-click to run directly - no installation needed
+4. Can be moved between computers or run from a USB drive
+
+#### Windows Security Notice
+When running for the first time, Windows may show a SmartScreen warning:
+1. Click "More info"
+2. Click "Run anyway"
+This happens because the app isn't signed with a Microsoft certificate. The app is safe to use, but Windows shows this warning for all new/unknown applications.
+
+#### System Requirements
+- Windows 10 or later (64-bit)
+- 4GB RAM minimum (8GB recommended)
+- 200MB free disk space
+
 ## Quick Start
 
 1. **Select a Project**: Click "Select Folder" to choose your project directory

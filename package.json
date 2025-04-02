@@ -91,18 +91,17 @@
         }
       ],
       "icon": "public/favicon.ico",
-      "publisherName": ["flight505"],
-      "artifactName": "ContextCraft-${version}-${arch}-${name}.${ext}",
-      "portable": {
-        "artifactName": "ContextCraft-${version}-${arch}-portable.${ext}"
-      },
-      "nsis": {
-        "artifactName": "ContextCraft-${version}-${arch}-setup.${ext}",
-        "oneClick": true,
-        "perMachine": false,
-        "allowToChangeInstallationDirectory": false,
-        "deleteAppDataOnUninstall": true
-      }
+      "artifactName": "ContextCraft-${version}-${arch}-${name}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": true,
+      "artifactName": "ContextCraft-${version}-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "ContextCraft-${version}-${arch}-portable.${ext}"
     },
     "linux": {
       "target": [
