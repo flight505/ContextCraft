@@ -56,7 +56,7 @@ jobs:
           echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         continue-on-error: false
 
       - name: List installed packages
@@ -67,22 +67,25 @@ jobs:
         env:
           CI: true
 
-      - name: Debug - Project structure before build
+      - name: Debug - Project structure before build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
           echo "Package.json contents (build section):"
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
-          else
-            grep -A 50 '"build":' package.json
-          fi
+          Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
           
           echo "Project structure:"
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            Get-ChildItem -Recurse -Depth 2 | Where-Object { -not $_.FullName.Contains("node_modules") -and -not $_.FullName.Contains(".git") } | Select-Object FullName
-          else
-            find . -type d -not -path "*/node_modules/*" -not -path "*/.git/*" -maxdepth 3 | sort
-          fi
+          Get-ChildItem -Recurse -Depth 2 | Where-Object { -not $_.FullName.Contains("node_modules") -and -not $_.FullName.Contains(".git") } | Select-Object FullName
+
+      - name: Debug - Project structure before build (Unix)
+        if: runner.os != 'Windows'
         shell: bash
+        run: |
+          echo "Package.json contents (build section):"
+          grep -A 50 '"build":' package.json
+          
+          echo "Project structure:"
+          find . -type d -not -path "*/node_modules/*" -not -path "*/.git/*" -maxdepth 3 | sort
 
       - name: Create release-builds directory
         run: mkdir -p release-builds
@@ -92,11 +95,8 @@ jobs:
         run: ${{ matrix.package_cmd }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
           CSC_IDENTITY_AUTO_DISCOVERY: false
- 
           NOTARIZE: false
-
           DEBUG: electron-builder
 
       - name: List Build Output (Unix)
@@ -114,6 +114,7 @@ jobs:
 
       - name: List Build Output (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
           echo "Listing output in release-builds..."
           if (Test-Path -Path release-builds) { 
