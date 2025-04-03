@@ -268,16 +268,20 @@ const App = () => {
   // This approach prevents feedback loops between state updates and localStorage
 
   // Define applyFiltersAndSort early to avoid reference issues
+  // Ensure that displayedFiles will always exclude files that are marked as excluded, keeping both the file tree and file cards area in sync
   const applyFiltersAndSort = useCallback((files: Omit<FileData, 'content'>[], sort: SortOrder, filter: string) => {
-    let filtered = files;
-    if (filter) {
-      const lowerFilter = filter.toLowerCase();
-      filtered = files.filter(file =>
-        file.name.toLowerCase().includes(lowerFilter) ||
-        file.path.toLowerCase().includes(lowerFilter)
-      );
-    }
+    // First filter out excluded files
+    let filtered = files.filter(file => !file.excluded);
+  // Then apply search filter if present
+  if (filter) {
+    const lowerFilter = filter.toLowerCase();
+    filtered = filtered.filter(file =>
+      file.name.toLowerCase().includes(lowerFilter) ||
+      file.path.toLowerCase().includes(lowerFilter)
+    );
+  }
 
+    // Sort as before
     const [sortKey, sortDir] = sort.split("-");
 
     const sorted = [...filtered].sort((a, b) => {

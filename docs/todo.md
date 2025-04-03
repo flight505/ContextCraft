@@ -99,6 +99,7 @@ This **final** checklist ensures a **fully integrated** contextcraft, mirroring 
 - [x] Consolidate theme implementation in ThemeContext
 - [x] Fix dependency issues in Electron packaging
 - [x] Optimize GitHub Actions workflow to run builds only for tags
+- [x] Ensure that displayedFiles will always exclude files that are marked as excluded, keeping both the file tree and file cards area in sync
 
 ## 🚀 In Progress
 
@@ -143,3 +144,10 @@ This **final** checklist ensures a **fully integrated** contextcraft, mirroring 
 - [ ] apply back to code base
 
 
+## Release version tracker 
+version v1.0.2:
+   - [ ] includes that displayedFiles will always exclude files that are marked as excluded, keeping both the file tree and file cards area in sync 
+   - [x] includes reduced number of toasts 🥂
+   - [ ] includes Modified Rubric Creation Prompt 
+   - [ ] includes Guide and idears 
+   - [ ] A fix for windows build
