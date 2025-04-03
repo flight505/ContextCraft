@@ -397,9 +397,8 @@ const IgnorePatterns: React.FC<IgnorePatternsProps> = ({
         result = await handleSaveLocalPatterns();
       }
       
-      if (!result || !result.success) {
-        throw new Error('Unknown error occurred while saving patterns');
-      }
+      // Success - both helper functions either succeed or throw errors
+      // No need to check result.success as that's handled in the helper functions
       
       // Update the UI to show success state
       const editorContainer = document.querySelector(`.${styles.patternEntrySection}`);

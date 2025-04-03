@@ -1182,12 +1182,6 @@ function handleRequestFileList(event, data) {
       if (cachedFiles) {
         console.log(`Using ${cachedFiles.length} cached files for ${folderPath}`);
         
-        // Send cached files immediately
-        event.sender.send("file-processing-status", {
-          status: "complete",
-          message: `Found ${cachedFiles.length} files (from cache)`,
-        });
-        
         // Check cached files for reload functionality too
         if (data.forceRefresh) {
           // If forceRefresh is specified, ensure excluded property is set correctly
@@ -1213,12 +1207,6 @@ function handleRequestFileList(event, data) {
       console.log("Force refreshing directory:", folderPath);
       directoryCache.clear(folderPath);
     }
-
-    // Send initial progress update
-    event.sender.send("file-processing-status", {
-      status: "processing",
-      message: "Scanning directory structure...",
-    });
     
     // Set loading flag
     isLoadingDirectory = true;
@@ -1258,12 +1246,6 @@ function handleRequestFileList(event, data) {
       } else {
         console.log("WARNING: No files found in directory!");
       }
-
-      // Update with initial processing status
-      event.sender.send("file-processing-status", {
-        status: "processing",
-        message: `Processing ${files.length} files...`,
-      });
 
       // Optimize chunk size based on file count
       const CHUNK_SIZE = files.length < 100 ? 50 : 20; // Larger chunks for small directories
@@ -1310,13 +1292,6 @@ function handleRequestFileList(event, data) {
         // Update the current index
         currentIndex = endIndex;
         
-        // Update progress
-        const progressPercentage = Math.round((currentIndex / files.length) * 100);
-        event.sender.send("file-processing-status", {
-          status: "processing",
-          message: `Processing files... ${progressPercentage}% (${currentIndex}/${files.length})`,
-        });
-        
         // If there are more files to process, schedule the next chunk
         if (currentIndex < files.length) {
           // Use setTimeout to allow the UI to update between chunks
@@ -1327,12 +1302,6 @@ function handleRequestFileList(event, data) {
           
           // Cache the processed files
           directoryCache.set(folderPath, processedFiles);
-          
-          // Send completion status
-          event.sender.send("file-processing-status", {
-            status: "complete",
-            message: `Found ${processedFiles.length} files`,
-          });
           
           try {
             console.log(`Sending ${processedFiles.length} files to renderer`);

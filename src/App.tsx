@@ -410,7 +410,6 @@ const App = () => {
       
       setAllFiles(filesMetadata);
       applyFiltersAndSort(filesMetadata, sortOrder, searchTerm);  
-      setProcessingStatus({ status: "complete", message: `Loaded ${filesMetadata.length} files` });
     };
 
     const handleProcessingStatus = (status: { status: "idle" | "processing" | "complete" | "error"; message: string; }) => {
@@ -705,7 +704,6 @@ const App = () => {
   const reloadFolder = useCallback(() => {
     if (isElectron && selectedFolder) {
       console.log(`Reloading folder: ${selectedFolder}`);
-      setProcessingStatus({ status: "processing", message: "Reloading files..." });
       setAllFiles([]); // Clear current files
       setDisplayedFiles([]);
       // Optionally reset local patterns state if desired on manual reload
@@ -1277,7 +1275,6 @@ const App = () => {
 
       if (result.success) {
         console.log(`IPC: Save ${isGlobal ? 'global' : 'local'} patterns successful.`);
-        setProcessingStatus({ status: "complete", message: "Patterns saved." });
 
         // --- Update State --- 
         if (isGlobal) {
@@ -1369,8 +1366,6 @@ const App = () => {
 
       if (result.success) {
         console.log(`IPC: Reset ${isGlobal ? 'global' : 'local'} patterns successful`);
-        setProcessingStatus({ status: "complete", message: "Patterns reset." });
-
         // Update state with the default values returned
         if (isGlobal) {
           setGlobalPatternsState({
