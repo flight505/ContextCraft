@@ -179,3 +179,18 @@ Different path separators (\ on Windows vs / on macOS/Linux)
 Proper relative path calculations regardless of platform
 The fix should resolve the issue where the file tree in the sidebar shows the entire absolute path from the drive root on Windows, instead of just showing the project structure relative to the selected folder root.
 The code is now more robust and platform-independent when handling file paths, relying on Node.js's built-in path handling rather than manual string manipulation, which is prone to errors especially across different operating systems.
+
+previous changes ensure that:
+The file tree in the sidebar now correctly displays relative paths, making it clear which files are selected
+The internal storage of file paths (absolute paths) remains correct for both selection and content fetching
+The mapping between displayed paths and actual paths is now consistent
+The changes we made were:
+Adding relativePath property to all file objects in the main process
+Using Node.js's built-in path.relative() function to correctly calculate relative paths on all platforms
+Updating the buildFileTree function to use the pre-calculated relativePath instead of trying to compute it in the renderer
+These changes have addressed both the display issue (Problem 2) and the content copying issue (Problem 3) because they fixed the fundamental path handling inconsistency between macOS and Windows.
+Looking at the suggested optimizations:
+Debouncing: The code already has a debouncing mechanism with DEBOUNCE_DELAY set to 200ms, which looks reasonable.
+Dependency Arrays: The dependency arrays in the component look well-maintained. The getSelectedFilesContent function has all its dependencies properly listed.
+Tree Building: The tree building code has timeouts and safety mechanisms to prevent hanging, including buildTimeoutRef and error handling.
+These fixes should provide a more consistent experience across different operating systems, especially Windows, where path handling is different from Unix-based systems like macOS.
