@@ -5,7 +5,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "vite",
-    "dev:electron": "node scripts/dev.js",
+    "dev:electron": "cross-env ELECTRON_START_URL=http://localhost:5173 node scripts/dev.js",
     "build": "vite build",
     "build-electron": "node scripts/build.js",
     "verify-build": "node scripts/verify-build.js",
@@ -170,7 +170,8 @@
     "ts-node": "^10.9.2",
     "ts-prune": "^0.10.3",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "cross-env": "^7.0.3"
   },
   "dependencies": {
     "chokidar": "^3.5.3",
