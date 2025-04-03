@@ -154,43 +154,45 @@ version v1.0.2:
    - [x] A fix for windows build
 
 
-## Notes for Release v1.0.2 
-The electron application is correctly connecting to the Vite development server on port 5173 instead of attempting to connect to port 3000.
-This resolves the port mismatch problem described in your original issue. The fix was implemented by:
-Adding the cross-env package to set environment variables in a cross-platform way
-Setting ELECTRON_START_URL to point to the correct Vite port (5173)
-Using this environment variable in the Electron main process to load the correct URL
-Your dev mode should now work properly on both Windows and Mac.
+## Notes for Release v1.0.2
 
-changes we made to fix the Windows path issue:
-Updated FileData interface in src/types/FileTypes.ts:
-Added a relativePath property to store the pre-calculated relative path
-Modified readFilesRecursively function in electron/main.js:
-Added relativePath to all file objects using Node.js path.relative()
-This ensures paths are calculated correctly on all platforms including Windows
-Added the property to binary files, large files, and error files for consistency
-Updated buildFileTree function in src/components/Sidebar.tsx:
-Changed the code to use the pre-calculated relativePath from the main process
-Added fallback code for backward compatibility
-Added validation to skip files with missing relative paths
-These changes ensure that file paths are handled correctly across platforms, especially on Windows where path structures are different. The key improvement is that we're now using Node.js's native path.relative() function in the main process, which correctly handles:
-Windows drive letters (e.g., E:\)
-Different path separators (\ on Windows vs / on macOS/Linux)
-Proper relative path calculations regardless of platform
-The fix should resolve the issue where the file tree in the sidebar shows the entire absolute path from the drive root on Windows, instead of just showing the project structure relative to the selected folder root.
-The code is now more robust and platform-independent when handling file paths, relying on Node.js's built-in path handling rather than manual string manipulation, which is prone to errors especially across different operating systems.
+### Windows Build Fix
+The electron application now correctly connects to the Vite development server on port 5173 instead of port 3000. This resolves the port mismatch issue by:
+- Adding cross-env package for cross-platform environment variables
+- Setting ELECTRON_START_URL to the correct Vite port (5173)
+- Using this environment variable in the Electron main process
 
-previous changes ensure that:
-The file tree in the sidebar now correctly displays relative paths, making it clear which files are selected
-The internal storage of file paths (absolute paths) remains correct for both selection and content fetching
-The mapping between displayed paths and actual paths is now consistent
-The changes we made were:
-Adding relativePath property to all file objects in the main process
-Using Node.js's built-in path.relative() function to correctly calculate relative paths on all platforms
-Updating the buildFileTree function to use the pre-calculated relativePath instead of trying to compute it in the renderer
-These changes have addressed both the display issue (Problem 2) and the content copying issue (Problem 3) because they fixed the fundamental path handling inconsistency between macOS and Windows.
-Looking at the suggested optimizations:
-Debouncing: The code already has a debouncing mechanism with DEBOUNCE_DELAY set to 200ms, which looks reasonable.
-Dependency Arrays: The dependency arrays in the component look well-maintained. The getSelectedFilesContent function has all its dependencies properly listed.
-Tree Building: The tree building code has timeouts and safety mechanisms to prevent hanging, including buildTimeoutRef and error handling.
-These fixes should provide a more consistent experience across different operating systems, especially Windows, where path handling is different from Unix-based systems like macOS.
+### Path Handling Improvements
+Changes made to fix Windows path issues:
+- Updated FileData interface in src/types/FileTypes.ts:
+  - Added relativePath property to store pre-calculated relative paths
+- Modified readFilesRecursively function in electron/main.js:
+  - Added relativePath to all file objects using Node.js path.relative()
+  - Ensures correct path calculation across all platforms
+  - Applied to binary files, large files, and error files for consistency
+- Updated buildFileTree function in src/components/Sidebar.tsx:
+  - Now uses pre-calculated relativePath from the main process
+  - Added backward compatibility fallback
+  - Added validation to skip files with missing relative paths
+
+These improvements ensure:
+- File tree correctly displays relative paths
+- Internal storage of absolute paths remains correct
+- Consistent mapping between displayed and actual paths
+- Proper handling of Windows drive letters and path separators
+
+### File Exclusion Improvements
+- Modified applyFiltersAndSort function in App.tsx to consistently filter out excluded files
+- Ensures both file tree and file cards area stay in sync with excluded files
+- Prevents excluded files from appearing in search results or sorted views
+
+### UI Improvements
+- Reduced number of toast notifications for better user experience
+- Added comprehensive wiki page with usage documentation
+- Improved Rubric Creation Prompt for better AI interactions
+- Added guides and ideas for users in documentation
+
+### Performance Considerations
+- Debouncing: Already implemented with 200ms DEBOUNCE_DELAY
+- Dependency Arrays: Well-maintained throughout components
+- Tree Building: Includes timeouts and safety mechanisms to prevent hanging
