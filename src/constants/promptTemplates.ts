@@ -16,6 +16,66 @@ export type TemplateCategory =
 
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
   {
+    id: 'rubric-creation',
+    name: 'Codebase-Informed Rubric',
+    category: 'Analysis and Improvement',
+    icon: '📊',
+    description: 'Create a detailed 8-category evaluation rubric informed by your codebase',
+    content: `Modified Rubric Creation Prompt
+
+You are an expert in creating detailed and effective rubrics. Your goal is to construct a robust rubric with exactly 8 categories and A-F rating levels for the topic: <TOPIC>. You also have access to the following code base for context and reference: <CODEBASE>. Use insights from the code base to inform and enrich the rubric, but ensure the final rubric remains broadly applicable to <TOPIC>, not overly tailored to the specifics of <CODEBASE>. The final output MUST be a markdown table representing the complete rubric.
+
+To create the best possible rubric, follow these steps:
+1. Understand the Topic:
+First, take a moment to fully understand the topic: <TOPIC>. Consider its key components, aspects, and criteria for evaluation.
+
+2. Examine the Code Base (If Relevant):
+Review <CODEBASE> to gain concrete examples or patterns that might inform your categories or grade descriptors. Look for notable features, common pitfalls, or unique aspects. However, maintain a balance: use the code to inspire more specific or relevant criteria without making the rubric so specialized that it cannot be applied to other projects under the same topic.
+
+3. Brainstorm Core Categories:
+Think about the most important dimensions or categories for evaluating <TOPIC>. Aim for a comprehensive set of categories that cover all essential aspects. You may derive extra insight from the code base if it highlights key concerns (e.g., testing, security, architecture), but do not neglect broader best practices that might not appear in <CODEBASE>.
+
+4. Select and Refine 8 Categories:
+From your brainstormed list, carefully select the 8 most critical and distinct categories. Refine the names of these categories to be clear, concise, and user-friendly. Each category should represent a key area of evaluation for <TOPIC>.
+• Note: If the code base reveals significant issues or exemplary techniques in certain areas (e.g., performance, documentation), you may include corresponding categories. Just ensure these categories are still relevant to <TOPIC> in a general sense.
+
+5. Define Grade Descriptors for Each Category (A-F):
+For each of the 8 categories, you must define detailed descriptions for each grade level: A, B, C, D, E, and F.
+• Grade A (Excellent): Describe the characteristics of truly exceptional performance in this category.
+• Grade B (Good): Describe solid, above-average performance.
+• Grade C (Fair): Describe satisfactory or average performance.
+• Grade D (Needs Improvement): Describe performance that is below average and needs specific improvement.
+• Grade E (Poor): Describe significantly deficient performance.
+• Grade F (Failing): Describe completely inadequate or unacceptable performance.
+Ensure there is a clear progression of quality from A to F in your descriptions for each category. Whenever appropriate, you may reference themes discovered in <CODEBASE> (for instance, a security vulnerability or an especially efficient approach). However, avoid adding code-base-specific language that would not apply to other projects in the same domain.
+
+6. Format as a Markdown Table:
+Present the complete rubric as a markdown table with the following structure:
+
+| Category | Grade A | Grade B | Grade C | Grade D | Grade E | Grade F |
+|----------|---------|---------|---------|---------|---------|---------|
+| Category 1 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 2 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 3 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 4 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 5 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 6 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 7 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+| Category 8 Name | Description for Grade A | Description for Grade B | Description for Grade C | Description for Grade D | Description for Grade E | Description for Grade F |
+
+Replace "Category X Name" with the name of each of your 8 categories, and fill in the "Description for Grade X" cells with the corresponding descriptions you created in the previous step.
+
+Example (Row Only): If the topic was "Evaluating a Business Plan," one row of your markdown table might look like this:
+
+| Market Analysis | Comprehensive market analysis with strong evidence and clear understanding of market dynamics. | Solid market analysis with good understanding of the target market and competitive landscape. | Adequate market analysis demonstrating basic understanding. | Market analysis is present but weak or superficial. | Market analysis is significantly flawed or incomplete. | Market analysis is missing or fundamentally flawed. |
+
+Final Instruction
+
+Now, generate the complete markdown table rubric for the topic: <TOPIC>
+... enter your topic here ...
+</TOPIC>, referencing <CODEBASE> only as needed for additional clarity or examples. Your rubric should remain broadly applicable to <TOPIC> while also reflecting any insights from <CODEBASE> that are valuable for guiding evaluations or improvements.`
+  },
+  {
     id: 'architecture-review',
     name: 'Architecture Review',
     category: 'Code Review',

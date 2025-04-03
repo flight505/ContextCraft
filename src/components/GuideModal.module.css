@@ -1,0 +1,49 @@
+.guideContent {
+  padding: 8px 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: var(--text-primary);
+}
+
+.guideList {
+  margin: 0 0 16px;
+  padding-left: 24px;
+}
+
+.guideList li {
+  margin-bottom: 8px;
+}
+
+.guideList strong {
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.wikiSection {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.wikiSection p {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.wikiButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  min-width: 240px;
+} 

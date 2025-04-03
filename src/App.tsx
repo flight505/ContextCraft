@@ -6,7 +6,7 @@ import { FileData, FileTreeMode, SortOrder } from "./types/FileTypes";
 import { ThemeProvider } from "./context/ThemeContext";
 import ThemeToggle from "./components/ThemeToggle";
 import { generateAsciiFileTree, normalizePath, arePathsEqual } from "./utils/pathUtils";
-import { Github } from "lucide-react";
+import { Github, HelpCircle } from "lucide-react";
 import styles from "./App.module.css";
 import { Dropdown } from "./components/ui";
 import { ConfirmationDialog } from "./components/ui/ConfirmationDialog";
@@ -24,6 +24,7 @@ import { compressCode, removeComments, getLanguageFromFilename } from './utils/c
 // Import Toast component
 import { Toast, showToast } from './components/ui/Toast';
 import { toast } from 'sonner';
+import GuideModal from './components/GuideModal';
 
 // Keys for localStorage
 const STORAGE_KEYS = {
@@ -1668,6 +1669,12 @@ const App = () => {
     }
   }, [isElectron, selectedModelId]);
 
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  
+  const handleGuideClick = () => {
+    setIsGuideOpen(true);
+  };
+
   // --- Render ---
   return (
     <ThemeProvider>
@@ -1680,8 +1687,15 @@ const App = () => {
             <header className={styles.appHeader}>
               <h1>ContextCraft</h1>
               <div className={styles.headerActions}>
-                {/* <a href="#" className={styles.headerLink}>Guide</a>
-                <div className={styles.headerSeparator}></div> */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleGuideClick}
+                  startIcon={<HelpCircle size={16} />}
+                >
+                  Guide
+                </Button>
+                <div className={styles.headerSeparator}></div>
                 <ThemeToggle />
                 <div className={styles.headerSeparator}></div>
                 <a href="https://github.com/flight505/ContextCraft" target="_blank" rel="noopener noreferrer" className={styles.githubButton}>
@@ -1809,6 +1823,12 @@ const App = () => {
               )}
             </div>
 
+            {/* Add GuideModal */}
+            <GuideModal 
+              isOpen={isGuideOpen} 
+              onClose={() => setIsGuideOpen(false)} 
+            />
+            
             {/* Confirmation Dialogs */}
             <ConfirmationDialog isOpen={showClearSelectionDialog} onClose={() => setShowClearSelectionDialog(false)} onConfirm={clearSelection} title="Clear Selection" description="Clear all selected files?" confirmLabel="Clear" variant="destructive" />
             <ConfirmationDialog isOpen={showRemoveAllFoldersDialog} onClose={() => setShowRemoveAllFoldersDialog(false)} onConfirm={removeAllFolders} title="Remove All Folders" description="Remove all folders and reset the application?" confirmLabel="Remove All" variant="destructive" />

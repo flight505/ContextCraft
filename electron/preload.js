@@ -1,5 +1,5 @@
 // Preload script
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, shell } = require("electron");
 
 // Define valid channels in one place for better maintainability
 const VALID_CHANNELS = {
@@ -153,6 +153,14 @@ contextBridge.exposeInMainWorld("electron", {
         }
       });
     }
+  },
+
+  // Add openExternal function to open links in the default browser
+  openExternal: (url) => {
+    if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+      return shell.openExternal(url);
+    }
+    return Promise.reject(new Error('Invalid URL provided to openExternal'));
   },
 
   // Keep the generic ipcRenderer object for potential backward compatibility or other uses

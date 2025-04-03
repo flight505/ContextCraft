@@ -12,6 +12,18 @@ ContextCraft is a desktop application designed to help developers easily format 
 <div align="center">
  <img width="480" alt="ContextCraft Interface" src="https://github.com/user-attachments/assets/24a71305-eeb2-4468-9344-18ab874bc544" />
 </div>
+
+## Documentation
+
+Comprehensive documentation is available on our [GitHub Wiki](https://github.com/flight505/ContextCraft/wiki).
+
+The wiki includes:
+- Detailed installation instructions
+- Feature guides and examples
+- Configuration options
+- Troubleshooting steps
+- Best practices for AI prompting
+
 ## Features
 
 - 🗂️ **Project Navigation**: Browse and select files from your project directory
