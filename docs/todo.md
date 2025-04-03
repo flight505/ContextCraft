@@ -152,3 +152,30 @@ version v1.0.2:
    - [ ] includes Modified Rubric Creation Prompt 
    - [ ] includes Guide and idears 
    - [ ] A fix for windows build
+
+
+## Notes for Release v1.0.2 
+The electron application is correctly connecting to the Vite development server on port 5173 instead of attempting to connect to port 3000.
+This resolves the port mismatch problem described in your original issue. The fix was implemented by:
+Adding the cross-env package to set environment variables in a cross-platform way
+Setting ELECTRON_START_URL to point to the correct Vite port (5173)
+Using this environment variable in the Electron main process to load the correct URL
+Your dev mode should now work properly on both Windows and Mac.
+
+changes we made to fix the Windows path issue:
+Updated FileData interface in src/types/FileTypes.ts:
+Added a relativePath property to store the pre-calculated relative path
+Modified readFilesRecursively function in electron/main.js:
+Added relativePath to all file objects using Node.js path.relative()
+This ensures paths are calculated correctly on all platforms including Windows
+Added the property to binary files, large files, and error files for consistency
+Updated buildFileTree function in src/components/Sidebar.tsx:
+Changed the code to use the pre-calculated relativePath from the main process
+Added fallback code for backward compatibility
+Added validation to skip files with missing relative paths
+These changes ensure that file paths are handled correctly across platforms, especially on Windows where path structures are different. The key improvement is that we're now using Node.js's native path.relative() function in the main process, which correctly handles:
+Windows drive letters (e.g., E:\)
+Different path separators (\ on Windows vs / on macOS/Linux)
+Proper relative path calculations regardless of platform
+The fix should resolve the issue where the file tree in the sidebar shows the entire absolute path from the drive root on Windows, instead of just showing the project structure relative to the selected folder root.
+The code is now more robust and platform-independent when handling file paths, relying on Node.js's built-in path handling rather than manual string manipulation, which is prone to errors especially across different operating systems.

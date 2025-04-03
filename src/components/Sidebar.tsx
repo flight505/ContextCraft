@@ -296,12 +296,22 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
       
       // Process each file
       Array.from(pathMap.entries()).forEach(([path, file]) => {
-        let relativePath = path;
-        if (relativePath.startsWith(rootFolder)) {
-          relativePath = relativePath.substring(rootFolder.length);
+        // Use the pre-calculated relativePath from the main process if available,
+        // otherwise fall back to the current calculation method
+        let relativePath = file.relativePath || '';
+        
+        // If relativePath is not provided, calculate it (fallback for backward compatibility)
+        if (!relativePath && path.startsWith(rootFolder)) {
+          relativePath = path.substring(rootFolder.length);
           if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
             relativePath = relativePath.substring(1);
           }
+        }
+        
+        // Skip files with missing relative paths
+        if (!relativePath) {
+          console.warn(`Skipping file with missing relative path: ${path}`);
+          return;
         }
         
         const parts = relativePath.split(/[/\\]/);

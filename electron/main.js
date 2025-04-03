@@ -933,6 +933,7 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
     return [{
       name: "_APP_DIRECTORY_",
       path: dir,
+      relativePath: "", // Add empty relativePath for app directory
       content: "Please select a project directory instead of the PasteMax application directory.",
       tokenCount: 0,
       size: 0,
@@ -1006,6 +1007,7 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
           results.push({
             name: name,
             path: normalizedPath,
+            relativePath: normalizePath(path.relative(rootDir, normalizedPath)), // Add relative path property
             tokenCount: 0,
             size: 0,
             content: "",
@@ -1055,10 +1057,11 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
           results.push({
             name: dirent.name,
             path: normalizedPath,
+            relativePath: normalizePath(path.relative(rootDir, normalizedPath)), // Add relative path property
             tokenCount: 0,
             size: fileSize,
             content: "",
-            isBinary: false,
+            isBinary: true,
             isSkipped: true,
             error: "File too large to process",
           });
@@ -1073,6 +1076,7 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
           results.push({
             name: dirent.name,
             path: normalizedPath,
+            relativePath: normalizePath(path.relative(rootDir, normalizedPath)), // Add relative path property
             tokenCount: 0,
             size: fileSize,
             content: "",
@@ -1091,6 +1095,7 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
           results.push({
             name: dirent.name,
             path: normalizedPath,
+            relativePath: normalizePath(path.relative(rootDir, normalizedPath)), // Add relative path property
             content: fileContent, // Note: Consider not sending full content initially if memory is a concern
             tokenCount: initialTokenCount, // Initialize current count with uncompressed count
             uncompressedTokenCount: initialTokenCount, // Store the original count
@@ -1105,6 +1110,7 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
         results.push({
           name: dirent.name,
           path: normalizedPath,
+          relativePath: normalizePath(path.relative(rootDir, normalizedPath)), // Add relative path property
           tokenCount: 0,
           size: 0,
           isBinary: false,
@@ -1159,6 +1165,7 @@ function handleRequestFileList(event, data) {
       event.sender.send("file-list-data", [{
         name: "_APP_DIRECTORY_",
         path: normalizedFolderPath,
+        relativePath: "", // Add empty relativePath for app directory
         content: "Please select a project directory instead of the PasteMax application directory.",
         tokenCount: 0,
         size: 0,

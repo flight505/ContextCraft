@@ -1,6 +1,7 @@
 export interface FileData {
   name: string;
   path: string;
+  relativePath?: string;
   content?: string;
   tokenCount: number;
   uncompressedTokenCount: number;
