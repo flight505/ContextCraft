@@ -10,6 +10,7 @@ import { Button, Switch } from "./ui";
 import { ErrorBoundary } from './ErrorBoundary';
 import styles from "./IgnorePatterns.module.css";
 import { SYSTEM_PATTERN_CATEGORIES, IgnorePatternsState } from "../utils/patternUtils";
+import { showToast } from './ui/Toast';
 
 // Props interface - Updated
 interface IgnorePatternsProps {
@@ -381,53 +382,57 @@ const IgnorePatterns: React.FC<IgnorePatternsProps> = ({
   }, [currentLocalPatterns, selectedFolder, saveIgnorePatterns]);
 
   const handleSave = useCallback(async () => {
-    let success = false;
     try {
+      setApplyingPatterns(true);
+      
       let result;
       if (activeTab === 'global') {
+        // Save global patterns
         result = await handleSaveGlobalPatterns();
       } else {
+        // Save local patterns
+        if (!selectedFolder) {
+          throw new Error('No folder selected for local patterns');
+        }
         result = await handleSaveLocalPatterns();
       }
-      // Check if save was successful (assuming handlers return { success: true } or similar)
-      success = result?.success ?? true; // Default to true if no explicit success field
-
-      if (success) {
-        // Add status message for user feedback
-        const message = document.createElement('div');
-        message.className = styles.saveMessage;
-        message.textContent = `${activeTab === 'global' ? 'Global' : 'Local'} patterns saved successfully`;
-        
-        const container = document.querySelector(`.${styles.patternEntrySection}`);
-        if (container) {
-          container.appendChild(message);
-          setTimeout(() => {
-            if (container.contains(message)) {
-              container.removeChild(message);
-            }
-          }, 2000);
-        }
+      
+      if (!result || !result.success) {
+        throw new Error('Unknown error occurred while saving patterns');
       }
-    } catch (error) {
-      console.error('Failed to save patterns:', error);
       
-      // Show error message - Check if error is an instance of Error
-      const message = document.createElement('div');
-      message.className = `${styles.saveMessage} ${styles.errorMessage}`;
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save patterns';
-      message.textContent = `Error: ${errorMessage}`;
-      
-      const container = document.querySelector(`.${styles.patternEntrySection}`);
-      if (container) {
-        container.appendChild(message);
+      // Update the UI to show success state
+      const editorContainer = document.querySelector(`.${styles.patternEntrySection}`);
+      if (editorContainer) {
+        editorContainer.classList.add(styles.success);
         setTimeout(() => {
-          if (container.contains(message)) {
-            container.removeChild(message);
-          }
-        }, 3000);
+          editorContainer.classList.remove(styles.success);
+        }, 1000);
       }
+      
+      setApplyingPatterns(false);
+      
+      // Show success toast
+      showToast.success(`${activeTab === 'global' ? 'Global' : 'Local'} patterns saved successfully`);
+      
+    } catch (error) {
+      console.error('Error saving patterns:', error);
+      
+      // Update UI to show error state
+      const editorContainer = document.querySelector(`.${styles.patternEntrySection}`);
+      if (editorContainer) {
+        editorContainer.classList.add(styles.error);
+        setTimeout(() => {
+          editorContainer.classList.remove(styles.error);
+        }, 1000);
+      }
+      
+      setApplyingPatterns(false);
+      
+      // Show error toast
+      showToast.error('Error saving patterns', error instanceof Error ? error.message : String(error));
     }
-  }, [activeTab, handleSaveGlobalPatterns, handleSaveLocalPatterns]);
+  }, [activeTab, currentGlobalPatterns, currentLocalPatterns, handleSaveGlobalPatterns, handleSaveLocalPatterns, saveIgnorePatterns, selectedFolder]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -451,23 +456,14 @@ const IgnorePatterns: React.FC<IgnorePatternsProps> = ({
       setCurrentLocalPatterns(''); // Clear the textarea
       setLastSavedLocal(prev => ({ ...prev, [selectedFolder]: null })); // Clear timestamp
       setApplyingPatterns(false);
-      // Add feedback message
-      const message = document.createElement('div');
-      message.className = styles.saveMessage;
-      message.textContent = `Local patterns cleared successfully`;
       
-      const container = document.querySelector(`.${styles.patternEntrySection}`);
-      if (container) {
-        container.appendChild(message);
-        setTimeout(() => {
-          if (container.contains(message)) {
-            container.removeChild(message);
-          }
-        }, 2000);
-      }
+      // Use toast instead of custom message
+      showToast.success('Local patterns cleared successfully');
+      
     } catch (error) {
       console.error('Error clearing local patterns:', error);
       setApplyingPatterns(false);
+      showToast.error('Error clearing local patterns', error instanceof Error ? error.message : String(error));
     }
   }, [selectedFolder, clearIgnorePatterns]);
 
@@ -482,23 +478,14 @@ const IgnorePatterns: React.FC<IgnorePatternsProps> = ({
       // For now, let's clear it as we don't know the *exact* save time of the reset default
       setLastSavedLocal(prev => ({ ...prev, [selectedFolder]: null })); 
       setApplyingPatterns(false);
-      // Add feedback message
-      const message = document.createElement('div');
-      message.className = styles.saveMessage;
-      message.textContent = `Local patterns reset successfully`;
       
-      const container = document.querySelector(`.${styles.patternEntrySection}`);
-      if (container) {
-        container.appendChild(message);
-        setTimeout(() => {
-          if (container.contains(message)) {
-            container.removeChild(message);
-          }
-        }, 2000);
-      }
+      // Use toast instead of custom message
+      showToast.success('Local patterns reset successfully');
+      
     } catch (error) {
       console.error('Error resetting local patterns:', error);
       setApplyingPatterns(false);
+      showToast.error('Error resetting local patterns', error instanceof Error ? error.message : String(error));
     }
   }, [selectedFolder, resetIgnorePatterns]);
 

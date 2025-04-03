@@ -461,13 +461,12 @@
   border-radius: 2px;
   margin-left: 4px;
   color: var(--text-primary);
-  background-color: var(--accent-color);
   opacity: 0.7;
 }
 
 .previewBadgeLocal {
-  background-color: var(--success-color);
-  opacity: 0.7;
+  color: var(--success-color);
+  opacity: 0.9;
 }
 
 .previewComment {
@@ -815,8 +814,8 @@
 }
 
 .testResultsHeader {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 500;
   margin-bottom: 0.75rem;
   color: var(--text-primary);
 }
@@ -855,6 +854,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   border-radius: 3px;
+  font-size: 0.7rem;
 }
 
 .testError {
