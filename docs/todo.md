@@ -146,12 +146,12 @@ This **final** checklist ensures a **fully integrated** contextcraft, mirroring 
 
 ## Release version tracker 
 version v1.0.2:
-   - [ ] includes that displayedFiles will always exclude files that are marked as excluded, keeping both the file tree and file cards area in sync 
+   - [x] includes that displayedFiles will always exclude files that are marked as excluded, keeping both the file tree and file cards area in sync 
    - [x] includes reduced number of toasts 🥂
    - [x] includes a comprehensive wiki page 
-   - [ ] includes Modified Rubric Creation Prompt 
-   - [ ] includes Guide and idears 
-   - [ ] A fix for windows build
+   - [x] includes Modified Rubric Creation Prompt 
+   - [x] includes Guide and idears 
+   - [x] A fix for windows build
 
 
 ## Notes for Release v1.0.2 
