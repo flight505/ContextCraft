@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Dialog } from './ui/Dialog';
 import { Button } from './ui/Button';
 import { ExternalLink } from 'lucide-react';
@@ -14,14 +14,16 @@ interface GuideModalProps {
  * and links to the full GitHub wiki documentation
  */
 const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
-  const handleOpenWiki = () => {
-    if (window.electron) {
-      window.electron.ipcRenderer.invoke('open-external', 'https://github.com/flight505/ContextCraft/wiki');
+  // Define a handler for opening the wiki in an external browser
+  const _handleOpenWiki = useCallback(() => { // Prefix with underscore to indicate intentionally unused
+    // Only available in Electron environment
+    if (window.electron?.openExternal) {
+      window.electron.openExternal('https://github.com/flight505/ContextCraft/wiki');
     } else {
-      // Fallback for web or if electron is not available
+      // Fallback for non-Electron environments
       window.open('https://github.com/flight505/ContextCraft/wiki', '_blank', 'noopener,noreferrer');
     }
-  };
+  }, []);
 
   return (
     <Dialog
@@ -60,7 +62,7 @@ const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
           <h2 className={styles.sectionTitle}>Complete Documentation</h2>
           <p>For detailed instructions documentation and ideas on VibeCoding, visit the Wiki:</p>
           <Button 
-            onClick={() => window.open('https://github.com/flight505/ContextCraft/wiki', '_blank', 'noopener,noreferrer')}
+            onClick={_handleOpenWiki}
             variant="primary"
             className={styles.wikiButton}
             endIcon={<ExternalLink size={16} />}
