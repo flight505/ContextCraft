@@ -16,7 +16,7 @@
     "debug-gh-release": "git tag debug-v$(date +'%Y%m%d%H%M%S') && git push origin --tags",
     "package": "vite build && electron-builder --publish=never",
     "package:mac": "vite build && electron-builder --mac --publish=never",
-    "package:win": "vite build && electron-builder --win --publish=never",
+    "package:win": "node scripts/windows-build.js",
     "package:linux": "vite build && electron-builder --linux --publish=never",
     "package:all": "vite build && electron-builder -mwl --publish=never",
     "release": "vite build && electron-builder --publish=onTagOrDraft",
