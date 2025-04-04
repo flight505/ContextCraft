@@ -1,0 +1,15 @@
+{
+  "windows": {
+    "visualStudioVersion": "",
+    "nodeGypPath": ""
+  },
+  "mac": {
+    "nodeGypPath": ""
+  },
+  "linux": {
+    "nodeGypPath": ""
+  },
+  "general": {
+    "cxxStandard": "c++20"
+  }
+}
