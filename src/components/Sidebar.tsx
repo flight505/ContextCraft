@@ -8,7 +8,7 @@ import { Button } from "./ui";
 import SearchBar from "./SearchBar";
 import styles from "./Sidebar.module.css";
 import { ModelInfo } from "../types/ModelTypes";
-import { Toast, showToast } from "./ui/Toast";
+import { Toast as _Toast, showToast as _showToast } from "./ui/Toast";
 
 // Extend the existing SidebarProps from FileTypes
 interface ExtendedSidebarProps extends SidebarProps {
@@ -75,10 +75,10 @@ const Sidebar: React.FC<ExtendedSidebarProps> = ({
   globalPatternsState,
   localPatternsState,
   onExcludedSystemPatternsChange,
-  // Unused props (prefixed with _ to indicate they're intentionally unused)
-  _availableModels: availableModels,
-  _selectedModelId: selectedModelId,
-  _onModelChange: onModelChange,
+  // Model-related props - use proper syntax for destructuring with _ prefix
+  availableModels: _availableModels,
+  selectedModelId: _selectedModelId,
+  onModelChange: _onModelChange,
 }) => {
   const [fileTree, setFileTree] = useState<TreeNode[]>([]);
   const [sidebarWidth, setSidebarWidth] = useState(300);

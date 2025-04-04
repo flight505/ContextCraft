@@ -3,7 +3,7 @@
  */
 
 import { FileTreeMode } from "../types/FileTypes";
-import path from 'path'; // Ensure path is imported if needed internally
+import _path from 'path'; // Prefix with underscore to indicate intentionally unused
 
 /**
  * Normalizes a file path to use forward slashes regardless of operating system
