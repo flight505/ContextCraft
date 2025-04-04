@@ -81,10 +81,10 @@ const ControlContainer: React.FC<ControlContainerProps> = ({
   // Destructure comment removal props
   isCommentRemovalEnabled,
   setIsCommentRemovalEnabled,
-  // Unused props (prefixed with _ to indicate they're intentionally unused)
-  _isElectron: isElectron,
-  _processingStatus: processingStatus,
-  _onGenerateOutput: onGenerateOutput,
+  // Properly prefix unused props with underscore
+  isElectron: _isElectron,
+  processingStatus: _processingStatus,
+  onGenerateOutput: _onGenerateOutput,
   // New prop for refreshing models
   onRefreshModels,
   // Destructure new props for enhanced compression controls
@@ -92,7 +92,7 @@ const ControlContainer: React.FC<ControlContainerProps> = ({
   setKeepDocstrings,
   removeEmptyLines,
   setRemoveEmptyLines,
-  _neverCompressPatterns: neverCompressPatterns,
+  neverCompressPatterns: _neverCompressPatterns,
   neverCompressPatternsRaw,
   setNeverCompressPatternsRaw,
   minCompressTokenThreshold,

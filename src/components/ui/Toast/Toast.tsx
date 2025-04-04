@@ -1,5 +1,5 @@
 import React from 'react';
-import { Toaster as SonnerToaster, toast } from 'sonner';
+import { Toaster as SonnerToaster, toast as _toast } from 'sonner';
 import { X } from 'lucide-react';
 import styles from './Toast.module.css';
 import { cn } from '../../../utils/cn';

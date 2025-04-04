@@ -385,16 +385,16 @@ const IgnorePatterns: React.FC<IgnorePatternsProps> = ({
     try {
       setApplyingPatterns(true);
       
-      let result;
+      let _result;
       if (activeTab === 'global') {
         // Save global patterns
-        result = await handleSaveGlobalPatterns();
+        _result = await handleSaveGlobalPatterns();
       } else {
         // Save local patterns
         if (!selectedFolder) {
           throw new Error('No folder selected for local patterns');
         }
-        result = await handleSaveLocalPatterns();
+        _result = await handleSaveLocalPatterns();
       }
       
       // Success - both helper functions either succeed or throw errors
@@ -431,7 +431,7 @@ const IgnorePatterns: React.FC<IgnorePatternsProps> = ({
       // Show error toast
       showToast.error('Error saving patterns', error instanceof Error ? error.message : String(error));
     }
-  }, [activeTab, currentGlobalPatterns, currentLocalPatterns, handleSaveGlobalPatterns, handleSaveLocalPatterns, saveIgnorePatterns, selectedFolder]);
+  }, [activeTab, selectedFolder, handleSaveGlobalPatterns, handleSaveLocalPatterns]);
 
   // Keyboard shortcuts
   useEffect(() => {
