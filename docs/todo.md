@@ -196,3 +196,9 @@ These improvements ensure:
 - Debouncing: Already implemented with 200ms DEBOUNCE_DELAY
 - Dependency Arrays: Well-maintained throughout components
 - Tree Building: Includes timeouts and safety mechanisms to prevent hanging
+
+## Notes for Release v1.0.3
+
+### Windows Build Fix
+The electron application now correctly connects to the Vite development server on port 5173 instead of port 3000.
+
