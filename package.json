@@ -15,6 +15,8 @@
     "test-build:win": "node scripts/test-local-build.js win",
     "test-build:linux": "node scripts/test-local-build.js linux",
     "test-build:cross": "node scripts/cross-platform-build.js",
+    "test-all": "npm test && npm run rebuild-native-modules && npm run test-build:mac && npm run test-build:win",
+    "test-comprehensive": "node scripts/test-comprehensive.js",
     "debug-gh-release": "git tag debug-v$(date +'%Y%m%d%H%M%S') && git push origin --tags",
     "package": "vite build && electron-builder --publish=never",
     "package:mac": "node scripts/mac-build.js",
