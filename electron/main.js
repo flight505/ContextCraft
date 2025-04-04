@@ -976,12 +976,12 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
       const fullPath = path.join(dir, name);
       const normalizedPath = normalizePath(fullPath);
       const relativePath = path.relative(rootDir, normalizedPath);
-
+      
       // Skip if the path is ignored
       if (ignoreFilter.ignores(relativePath)) {
         continue;
       }
-
+      
       if (dirent.isDirectory()) {
         // Skip .app directories (macOS application bundles)
         if (name.endsWith('.app')) {
@@ -1067,10 +1067,20 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
           });
           continue;
         }
-
+  
         // Check if the file is binary
         const isBinary = isBinaryFile(normalizedPath);
-
+  
+        // *** Add Enhanced Logging Here ***
+        const relativePathForLog = normalizePath(path.relative(rootDir, normalizedPath));
+        if (!relativePathForLog) { // Log specifically when relativePath is missing/empty
+            console.error(`[CRITICAL main.js] Missing relativePath! rootDir='${rootDir}', normalizedPath='${normalizedPath}', calculatedRelative='${path.relative(rootDir, normalizedPath)}'`);
+        } else if (debugCounter < MAX_DEBUG_FILES) { // Limit successful logs
+            console.log(`[Debug main.js] Adding file: Name=${dirent.name}, Path=${normalizedPath}, RelativePath=${relativePathForLog}`);
+            debugCounter++;
+        }
+        // *** End Enhanced Logging ***
+  
         if (isBinary) {
           // Skip token counting for binary files
           results.push({
@@ -1087,10 +1097,10 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
         } else {
           // Read file content
           const fileContent = fs.readFileSync(normalizedPath, "utf8");
-
+  
           // Calculate token count (this is the initial, uncompressed count)
           const initialTokenCount = countTokens(fileContent);
-
+  
           // Add file info with content and token count
           results.push({
             name: dirent.name,
@@ -1107,6 +1117,12 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
         }
       } catch (err) {
         console.error(`Error reading file ${normalizedPath}:`, err);
+        // *** Add Enhanced Logging Here Too for Errors ***
+        const relativePathForErrLog = normalizePath(path.relative(rootDir, normalizedPath));
+        if (!relativePathForErrLog) {
+            console.error(`[CRITICAL main.js ERROR CASE] Missing relativePath! rootDir='${rootDir}', normalizedPath='${normalizedPath}', calculatedRelative='${path.relative(rootDir, normalizedPath)}'`);
+        }
+        // *** End Enhanced Logging ***
         results.push({
           name: dirent.name,
           path: normalizedPath,
