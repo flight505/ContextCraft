@@ -23,7 +23,6 @@ import { ModelInfo } from "./types/ModelTypes"; // Import the new ModelInfo type
 import { compressCode, removeComments, getLanguageFromFilename } from './utils/compressionUtils'; // Import compression utils and getLanguageFromFilename
 // Import Toast component
 import { Toast, showToast } from './components/ui/Toast';
-import { toast } from 'sonner';
 import GuideModal from './components/GuideModal';
 
 // Keys for localStorage
@@ -170,7 +169,7 @@ const App = () => {
   }, [neverCompressPatternsRaw]);
 
   // Add state for model loading
-  const [isLoadingModels, setIsLoadingModels] = useState<boolean>(false);
+  const [_isLoadingModels, setIsLoadingModels] = useState<boolean>(false); // Prefix with underscore to indicate intentionally unused
   const [initialModelLoadComplete, setInitialModelLoadComplete] = useState<boolean>(false);
 
   // --- Fetch Models Effect ---
@@ -660,7 +659,7 @@ const App = () => {
   }, []); // Add empty dependency array
 
   // Calculate total tokens (Memoized)
-  const totalTokens = useMemo(() => { // Renamed to avoid conflict
+  const _totalTokens = useMemo(() => { // Prefix with underscore to indicate intentionally unused
     const fileMap = new Map(allFiles.map(f => [f.path, f.tokenCount]));
     return selectedFiles.reduce((total, path) => {
       return total + (fileMap.get(path) || 0);
@@ -668,7 +667,7 @@ const App = () => {
   }, [selectedFiles, allFiles]);
 
   // Calculate total token count for selected files
-  const totalTokenCount = useMemo(() => {
+  const _totalTokenCount = useMemo(() => { // Prefix with underscore to indicate intentionally unused
     // If no folder is selected, or file list/selection is empty, count is 0
     if (!selectedFolder || !allFiles || allFiles.length === 0 || selectedFiles.length === 0) {
       return 0;
@@ -723,7 +722,7 @@ const App = () => {
   }, [isElectron, selectedFolder]); // Now defined before other callbacks
 
   // Helper to get language identifier for compression function
-  const getLanguageFromPath = (filePath: string): string | null => {
+  const _getLanguageFromPath = (filePath: string): string | null => { // Prefix with underscore to indicate intentionally unused
     // Extract extension in a browser-safe way
     const lastDotIndex = filePath.lastIndexOf('.');
     const extension = lastDotIndex !== -1 ? filePath.slice(lastDotIndex + 1).toLowerCase() : '';
@@ -790,7 +789,7 @@ const App = () => {
     if (removeCommentsFlag) {
       console.log("Attempting comment removal...");
       setProcessingStatus({ status: 'processing', message: 'Removing comments...' });
-      let commentsRemovedCount = 0;
+      let _commentsRemovedCount = 0; // Prefix with underscore to indicate intentionally unused
       // Use Promise.all for potentially faster parallel processing
       await Promise.all(mutableFiles.map(async (file) => {
         const language = getLanguageFromFilename(file.name);
@@ -821,7 +820,7 @@ const App = () => {
            const contentWithoutComments = await removeComments(currentContent, language, keepDocstringsFlag);
 
            if (contentWithoutComments !== null && contentWithoutComments !== currentContent) {
-             commentsRemovedCount++;
+             _commentsRemovedCount++;
              // Recalculate token count *after* comment removal
              const newTokenCount = await window.electron.countTokens(contentWithoutComments);
              // *** IMPORTANT: Store content and updated token count NOW ***
@@ -1544,8 +1543,8 @@ const App = () => {
     }));
   }, []);
 
-  const processingToastIds = useRef<Record<string, string>>({});
-  const fileOperationRef = useRef<{ inProgress: boolean }>({ inProgress: false });
+  const _processingToastIds = useRef<Record<string, string>>({});
+  const _fileOperationRef = useRef<{ inProgress: boolean }>({ inProgress: false });
   
   // Processing status effect - show toast notifications instead of StatusAlert
   useEffect(() => {
