@@ -6,6 +6,7 @@
     "start": "electron .",
     "dev": "vite",
     "dev:electron": "cross-env ELECTRON_START_URL=http://localhost:5173 node scripts/dev.js",
+    "dev:c++20": "node scripts/dev-with-c++20.js",
     "build": "vite build",
     "build-electron": "node scripts/build.js",
     "verify-build": "node scripts/verify-build.js",
