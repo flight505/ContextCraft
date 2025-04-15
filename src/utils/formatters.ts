@@ -37,7 +37,7 @@ export function formatAsXML(
 ): string {
   const timestamp = new Date().toISOString();
   let output = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  output += '<pastemax-export>\n';
+  output += '<contextcraft-export>\n';
   
   // Add metadata
   output += '  <metadata>\n';
@@ -75,7 +75,7 @@ export function formatAsXML(
   });
   output += '  </files>\n';
   
-  output += '</pastemax-export>';
+  output += '</contextcraft-export>';
   return output;
 }
 
@@ -87,7 +87,7 @@ export function formatAsMarkdown(
   userInstructions: string
 ): string {
   const timestamp = new Date().toISOString();
-  let output = '# PasteMax Export\n\n';
+  let output = '# ContextCraft Export\n\n';
 
   // Add metadata
   output += '## Metadata\n';
@@ -137,7 +137,7 @@ export function formatAsPlain(
 
   // Add header
   output += separator;
-  output += 'PASTEMAX EXPORT\n';
+  output += 'CONTEXTCRAFT EXPORT\n';
   output += separator + '\n';
 
   // Add metadata

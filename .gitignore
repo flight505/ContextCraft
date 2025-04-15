@@ -59,7 +59,6 @@ Thumbs.db
 # Release builds
 release-builds/
 dist/
-PasteMax Bugfix.md
 
 # Workspace and temporary files
 workspacesIndex.json

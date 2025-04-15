@@ -41,7 +41,7 @@ try {
   console.warn("Failed to load tree-sitter-html parser", e);
 }
 
-const COMPRESSION_PLACEHOLDER = '/* ... body removed by PasteMax ... */';
+const COMPRESSION_PLACEHOLDER = '/* ... body removed by ContextCraft ... */';
 
 /**
  * Gets the appropriate Tree-sitter language parser based on a simple language identifier.
