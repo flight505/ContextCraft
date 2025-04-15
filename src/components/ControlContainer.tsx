@@ -133,7 +133,7 @@ const ControlContainer: React.FC<ControlContainerProps> = ({
         const a = document.createElement('a');
         a.href = url;
         // Generate filename based on current context if possible
-        const filename = `pastemax_output_${new Date().toISOString().split('T')[0]}.txt`;
+        const filename = `contextcraft_output_${new Date().toISOString().split('T')[0]}.txt`;
         a.download = filename;
         document.body.appendChild(a);
         a.click();

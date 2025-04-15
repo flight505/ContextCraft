@@ -9,7 +9,7 @@ const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
-console.log("🔧 PasteMax Dependency Fixer");
+console.log("🔧 ContextCraft Dependency Fixer");
 console.log("============================");
 
 // Define the dependencies we need to ensure are installed
@@ -25,21 +25,21 @@ function getAppResourcesPath() {
       // macOS
       const homeDir = process.env.HOME;
       const appDir =
-        "/Applications/PasteMax.app/Contents/Resources/app.asar.unpacked";
+        "/Applications/ContextCraft.app/Contents/Resources/app.asar.unpacked";
       appPath = path.join(appDir, "node_modules");
     } else if (platform === "win32") {
       // Windows
       const programFiles = process.env["ProgramFiles"];
       appPath = path.join(
         programFiles,
-        "PasteMax",
+        "ContextCraft",
         "resources",
         "app.asar.unpacked",
         "node_modules",
       );
     } else {
       // Linux
-      appPath = "/usr/lib/pastemax/resources/app.asar.unpacked/node_modules";
+      appPath = "/usr/lib/contextcraft/resources/app.asar.unpacked/node_modules";
     }
 
     return appPath;
@@ -55,7 +55,7 @@ function fixDependencies() {
     // First, check if we're in the right directory
     if (!fs.existsSync("./package.json")) {
       console.error(
-        "❌ Error: package.json not found! Please run this script from the PasteMax source directory.",
+        "❌ Error: package.json not found! Please run this script from the ContextCraft source directory.",
       );
       process.exit(1);
     }

@@ -934,12 +934,12 @@ function readFilesRecursively(dir, rootDir, ignoreFilter) {
       name: "_APP_DIRECTORY_",
       path: dir,
       relativePath: "", // Add empty relativePath for app directory
-      content: "Please select a project directory instead of the PasteMax application directory.",
+      content: "Please select a project directory instead of the ContextCraft application directory.",
       tokenCount: 0,
       size: 0,
       isBinary: false,
       isSkipped: true,
-      error: "This is the running PasteMax application directory. Please select a different project directory.",
+      error: "This is the running ContextCraft application directory. Please select a different project directory.",
       isAppDirectory: true
     }];
   }
@@ -1182,18 +1182,18 @@ function handleRequestFileList(event, data) {
         name: "_APP_DIRECTORY_",
         path: normalizedFolderPath,
         relativePath: "", // Add empty relativePath for app directory
-        content: "Please select a project directory instead of the PasteMax application directory.",
+        content: "Please select a project directory instead of the ContextCraft application directory.",
         tokenCount: 0,
         size: 0,
         isBinary: false,
         isSkipped: true,
-        error: "This is the running PasteMax application directory. Please select a different project directory.",
+        error: "This is the running ContextCraft application directory. Please select a different project directory.",
         isAppDirectory: true
       }]);
       
       event.sender.send("file-processing-status", {
         status: "error",
-        message: "Please select a project directory instead of the PasteMax application.",
+        message: "Please select a project directory instead of the ContextCraft application.",
       });
       
       return;
