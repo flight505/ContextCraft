@@ -88,13 +88,11 @@
       "category": "public.app-category.developer-tools",
       "icon": "public/favicon.icns",
       "target": [
-        "dmg",
         "zip"
       ],
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": [
@@ -140,14 +138,12 @@
       "node_modules/chokidar/**",
       "node_modules/tree-sitter*/**"
     ],
-    "afterSign": "scripts/notarize.js",
     "publish": {
       "provider": "github",
       "releaseType": "draft"
     }
   },
   "devDependencies": {
-    "@electron/notarize": "^2.5.0",
     "@electron/rebuild": "^3.7.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",

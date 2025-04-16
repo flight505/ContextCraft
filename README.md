@@ -109,27 +109,19 @@ The wiki includes:
 ## Installation
 
 ### macOS
-Download the latest `.dmg` file from the [Releases](https://github.com/flight505/ContextCraft/releases) page
+Download the latest version from the [Releases](https://github.com/flight505/ContextCraft/releases) page.
 
-#### Alternative Installation Method
-You can also download the `.zip` version instead of the `.dmg`. The ZIP version might be easier to open on some systems:
 1. Download the latest `ContextCraft-[version]-arm64-mac.zip`
 2. Double-click to extract it
 3. Drag the extracted ContextCraft app to your Applications folder
-4. Follow the same security bypass steps as with the DMG version
 
 #### Important Note About Security on macOS
-Since ContextCraft is not signed with an Apple Developer Certificate, you'll see a security warning when trying to open the app. This is normal and doesn't mean there's anything wrong with the application. To install:
+Since ContextCraft is not signed with an Apple Developer Certificate, you'll see a security warning when trying to open the app. This is normal and doesn't mean there's anything wrong with the application. To open the app:
 
-1. Download the `.dmg` file
-2. Double-click to mount the disk image
-3. Drag ContextCraft to your Applications folder
-4. When you first try to open the app, macOS will show a security warning
-5. To open the app:
-   - Right-click (or Control-click) ContextCraft in the Applications folder
-   - Select "Open" from the context menu
-   - Click "Open" in the security dialog
-   - You only need to do this once; subsequent launches will work normally
+1. Right-click (or Control-click) ContextCraft in the Applications folder
+2. Select "Open" from the context menu
+3. Click "Open" in the security dialog
+4. You only need to do this once; subsequent launches will work normally
 
 Alternatively, you can:
 1. Open System Settings
