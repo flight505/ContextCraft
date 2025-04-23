@@ -132,8 +132,15 @@ jobs:
         run: ${{ matrix.package_cmd }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          NOTARIZE: false
+          # Set environment variables for code signing and notarization (macOS only)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # Enable code signing and notarization for macOS builds
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' }}
+          # Enable debug for electron-builder
           DEBUG: electron-builder
 
       - name: List Build Output (Unix)
