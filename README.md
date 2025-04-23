@@ -111,47 +111,12 @@ The wiki includes:
 ### macOS
 Download the latest version from the [Releases](https://github.com/flight505/ContextCraft/releases) page.
 
-1. Download the latest `ContextCraft-[version]-arm64-mac.zip`
-2. Double-click to extract it
-3. Drag the extracted ContextCraft app to your Applications folder
+1. Download the latest `ContextCraft-[version]-arm64-mac.dmg`
+2. Open the DMG file
+3. Drag the ContextCraft app to your Applications folder
+4. Launch the app from your Applications folder or Launchpad
 
-#### Important Note About Security on macOS
-Since ContextCraft is not signed with an Apple Developer Certificate, you'll see a security warning when trying to open the app. This is normal and doesn't mean there's anything wrong with the application. To open the app:
-
-1. Right-click (or Control-click) ContextCraft in the Applications folder
-2. Select "Open" from the context menu
-3. Click "Open" in the security dialog
-4. You only need to do this once; subsequent launches will work normally
-
-Alternatively, you can:
-1. Open System Settings
-2. Go to Privacy & Security
-3. Scroll down to the "Security" section
-4. Click "Open Anyway" next to the message about ContextCraft
-
-**Why this happens**: Apple requires apps to be signed with an Apple Developer Certificate ($99/year) and notarized for best security. We've chosen to distribute ContextCraft without this certification to keep it free and open source. The app is still safe to use; you're just bypassing Apple's verification system.
-
-#### Installation Screenshots
-
-<details>
-<summary>Click to see what to expect during installation</summary>
-
-1. Initial Security Warning:
-   ```
-   "ContextCraft" cannot be opened because the developer cannot be verified.
-   macOS cannot verify that this app is free from malware.
-   ```
-   
-2. Opening from Context Menu:
-   - Right-click menu will show "Open" option
-   - A dialog will appear with an "Open" button
-   
-3. Privacy & Security Settings:
-   - Look for the message: "ContextCraft was blocked from use because it is not from an identified developer"
-   - Click "Open Anyway" button
-   
-Note: These screenshots are from macOS Sonoma. The exact appearance might vary slightly depending on your macOS version.
-</details>
+ContextCraft is now properly signed and notarized with an Apple Developer Certificate, ensuring a smooth installation experience. You should be able to open the application without any security warnings.
 
 ### Windows
 Download the latest Windows build from the [Releases](https://github.com/flight505/ContextCraft/releases) page. You have two options:
