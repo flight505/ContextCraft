@@ -77,3 +77,4 @@ reset-patterns.js
 
 # Local ignore files
 .repo_ignore
+memory.jsonl
