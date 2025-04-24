@@ -111,12 +111,18 @@ The wiki includes:
 ### macOS
 Download the latest version from the [Releases](https://github.com/flight505/ContextCraft/releases) page.
 
-1. Download the latest `ContextCraft-[version]-arm64-mac.dmg`
-2. Open the DMG file
-3. Drag the ContextCraft app to your Applications folder
-4. Launch the app from your Applications folder or Launchpad
+You have two options:
+1. **DMG Installer (Recommended)**: Download the latest `ContextCraft-[version]-arm64-mac.dmg`
+   - Open the DMG file
+   - Drag the ContextCraft app to your Applications folder
+   - Launch the app from your Applications folder or Launchpad
 
-ContextCraft is now properly signed and notarized with an Apple Developer Certificate, ensuring a smooth installation experience. You should be able to open the application without any security warnings.
+2. **ZIP Archive**: Download the latest `ContextCraft-[version]-arm64-mac.zip`
+   - Extract the ZIP file
+   - Move the extracted ContextCraft app to your Applications folder
+   - Launch the app from your Applications folder or Launchpad
+
+ContextCraft is properly signed and notarized with an Apple Developer Certificate, ensuring a smooth installation experience. You should be able to open the application without any security warnings.
 
 ### Windows
 Download the latest Windows build from the [Releases](https://github.com/flight505/ContextCraft/releases) page. You have two options:
@@ -185,7 +191,7 @@ npm run package:linux
 
 ## License
 
-Compleatly rewritten by me and AI and it is compleatly free and open source.
+Completely rewritten by me and AI and it is completely free and open source.
 
 For full disclosure, this is based on a video by Kevin Leneway, which you can find at https://www.youtube.com/@kevinleneway2290 
 Follow his channel for more great content!
