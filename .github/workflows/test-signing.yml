@@ -1,0 +1,99 @@
+name: Test Apple Code Signing
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  test-signing:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Verify package.json configuration for macOS
+        run: |
+          echo "Checking package.json build configuration for macOS:"
+          grep -A 30 '"mac":' package.json || echo "No mac configuration found!"
+          
+          # Check for afterSign hook
+          if grep -q '"afterSign":' package.json; then
+            echo "✅ afterSign hook is configured"
+          else
+            echo "❌ afterSign hook is missing in package.json"
+          fi
+          
+          # Check for notarize.js script
+          if [ -f "scripts/notarize.js" ]; then
+            echo "✅ notarize.js script exists"
+          else
+            echo "❌ notarize.js script is missing"
+          fi
+      
+      - name: Check for Apple signing credentials (redacted)
+        run: |
+          echo "Checking for code signing credentials (redacted):"
+          if [ -n "${{ secrets.CSC_LINK }}" ]; then echo "✅ CSC_LINK is set"; else echo "❌ CSC_LINK is not set"; fi
+          if [ -n "${{ secrets.CSC_KEY_PASSWORD }}" ]; then echo "✅ CSC_KEY_PASSWORD is set"; else echo "❌ CSC_KEY_PASSWORD is not set"; fi
+          if [ -n "${{ secrets.APPLE_ID }}" ]; then echo "✅ APPLE_ID is set"; else echo "❌ APPLE_ID is not set"; fi
+          if [ -n "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then echo "✅ APPLE_APP_SPECIFIC_PASSWORD is set"; else echo "❌ APPLE_APP_SPECIFIC_PASSWORD is not set"; fi
+          if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "✅ APPLE_TEAM_ID is set"; else echo "❌ APPLE_TEAM_ID is not set"; fi
+      
+      - name: Test Apple certificate import
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Create temporary directory and files
+          TEMP_DIR=$(mktemp -d)
+          CERTIFICATE_PATH="$TEMP_DIR/certificate.p12"
+          KEYCHAIN_PATH="$TEMP_DIR/test.keychain-db"
+          KEYCHAIN_PASSWORD="temp-password"
+          
+          echo "Created temporary directory: $TEMP_DIR"
+          
+          # Decode certificate
+          echo "Decoding certificate..."
+          echo -n "$CSC_LINK" | base64 --decode -o "$CERTIFICATE_PATH"
+          
+          # Create temporary keychain
+          echo "Creating temporary keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          
+          # Import certificate to keychain
+          echo "Importing certificate..."
+          security import "$CERTIFICATE_PATH" -P "$CSC_KEY_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          
+          # List certificates to verify
+          echo "Verifying imported certificates:"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          
+          # Clean up
+          echo "Cleaning up..."
+          security delete-keychain "$KEYCHAIN_PATH"
+          rm -f "$CERTIFICATE_PATH"
+          rm -rf "$TEMP_DIR"
+      
+      - name: Run test script
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run test-signing-credentials 
