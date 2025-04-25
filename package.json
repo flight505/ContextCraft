@@ -19,6 +19,7 @@
     "test-build:cross": "node scripts/cross-platform-build.js",
     "test-all": "npm test && npm run rebuild-native-modules && npm run test-build:mac && npm run test-build:win",
     "test-comprehensive": "node scripts/test-comprehensive.js",
+    "test-signing-credentials": "node scripts/test-credentials.js",
     "debug-gh-release": "git tag debug-v$(date +'%Y%m%d%H%M%S') && git push origin --tags",
     "diagnose-mac": "node scripts/diagnose-build.js",
     "cleanup": "node scripts/cleanup-builds.js",
@@ -91,14 +92,12 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "public/favicon.icns",
-      "target": [
-        "dmg",
-        "zip"
-      ],
+      "target": ["dmg", "zip"],
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "afterSign": "scripts/notarize.js"
     },
     "win": {
       "target": [
