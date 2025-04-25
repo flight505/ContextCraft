@@ -1,0 +1,203 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Verify package.json config
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Verifying package.json configuration for macOS build..."
+          if [[ $(grep -c '"target": \["dmg", "zip"\]' package.json) -eq 0 ]]; then
+            echo "WARNING: DMG target may not be properly configured in package.json"
+            grep -A 20 "mac" package.json
+          else
+            echo "DMG target is configured in package.json"
+          fi
+          
+          # Verify other important configurations
+          if [[ $(grep -c '"category": "public.app-category' package.json) -eq 0 ]]; then
+            echo "WARNING: Mac category not properly configured in package.json"
+          fi
+          
+          if [[ $(grep -c '"hardenedRuntime": true' package.json) -eq 0 ]]; then
+            echo "WARNING: hardenedRuntime not configured in package.json"
+          fi
+          
+          # Check entitlements files
+          if [[ ! -f "build/entitlements.mac.plist" ]]; then
+            echo "WARNING: entitlements.mac.plist not found"
+          else
+            echo "entitlements.mac.plist found"
+            cat build/entitlements.mac.plist
+          fi
+
+      - name: Free Disk Space (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Available disk space before cleanup:"
+          df -h
+          
+          echo "Removing unnecessary files to free up space..."
+          sudo rm -rf /Library/Developer/CommandLineTools
+          sudo rm -rf /Applications/Xcode.app
+          sudo rm -rf /Library/Developer/CoreSimulator
+          
+          echo "Available disk space after cleanup:"
+          df -h
+
+      - name: Prepare for Mac App Store
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "Checking Apple signing environment variables..."
+          if [[ -z "${{ secrets.CSC_LINK }}" ]]; then 
+            echo "⚠️ CSC_LINK is not set" 
+          else 
+            echo "✅ CSC_LINK is set"
+          fi
+          
+          if [[ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]]; then 
+            echo "⚠️ CSC_KEY_PASSWORD is not set" 
+          else 
+            echo "✅ CSC_KEY_PASSWORD is set"
+          fi
+          
+          if [[ -z "${{ secrets.APPLE_ID }}" ]]; then 
+            echo "⚠️ APPLE_ID is not set" 
+          else 
+            echo "✅ APPLE_ID is set"
+          fi
+          
+          if [[ -z "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]]; then 
+            echo "⚠️ APPLE_APP_SPECIFIC_PASSWORD is not set" 
+          else 
+            echo "✅ APPLE_APP_SPECIFIC_PASSWORD is set"
+          fi
+          
+          if [[ -z "${{ secrets.APPLE_TEAM_ID }}" ]]; then 
+            echo "⚠️ APPLE_TEAM_ID is not set" 
+          else 
+            echo "✅ APPLE_TEAM_ID is set"
+          fi
+          
+          # Clean previous builds
+          echo "Cleaning previous builds..."
+          rm -rf release-builds || true
+          mkdir -p release-builds
+
+      - name: Build the app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          DEBUG: electron-builder,electron-osx-sign*
+        run: |
+          # First run the Vite build
+          npm run build
+          
+          # Then run the electron-builder
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "Building for macOS with electron-builder..."
+            npm run build:mac
+            
+            # Debug output for macOS builds
+            echo "Listing release-builds directory content:"
+            ls -la release-builds/
+            
+            # Check for DMG files
+            DMG_COUNT=$(find release-builds -name "*.dmg" | wc -l)
+            if [[ $DMG_COUNT -eq 0 ]]; then
+              echo "⚠️ WARNING: No DMG files were generated!"
+              
+              # Try with the enhanced script
+              echo "Attempting to create DMG with enhanced script..."
+              node scripts/mac-build.js --verbose
+              
+              # Check again after enhanced script
+              DMG_COUNT=$(find release-builds -name "*.dmg" | wc -l)
+              if [[ $DMG_COUNT -eq 0 ]]; then
+                echo "⚠️ Still no DMG files. Creating fallback DMG..."
+                
+                # Find app bundle
+                APP_BUNDLE=$(find release-builds -name "*.app" -type d | head -1)
+                if [[ -n "$APP_BUNDLE" ]]; then
+                  APP_NAME=$(basename "$APP_BUNDLE" .app)
+                  echo "Creating DMG from $APP_BUNDLE..."
+                  hdiutil create -volname "$APP_NAME" -srcfolder "$APP_BUNDLE" -ov -format UDZO "release-builds/$APP_NAME-fallback.dmg"
+                else
+                  echo "❌ ERROR: No app bundle found to create DMG from"
+                fi
+              fi
+            else
+              echo "✅ Found $DMG_COUNT DMG files"
+            fi
+            
+            # Check for app executables and fix permissions
+            find release-builds -name "*.app" -type d | while read app_path; do
+              echo "Setting executable permissions for $app_path/Contents/MacOS/*"
+              chmod -R +x "$app_path/Contents/MacOS/" || echo "Failed to set permissions"
+              ls -la "$app_path/Contents/MacOS/"
+            done
+          else
+            npm run build:electron
+          fi
+
+      - name: List Build Output
+        run: |
+          echo "Listing build output:"
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            find release-builds -type f -name "*.dmg" -o -name "*.zip" | while read file; do
+              echo "Found artifact: $file"
+              SIZE=$(du -h "$file" | cut -f1)
+              echo " - Size: $SIZE"
+            done
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            find dist -type f -name "*.AppImage" -o -name "*.deb" | while read file; do
+              echo "Found artifact: $file"
+              SIZE=$(du -h "$file" | cut -f1)
+              echo " - Size: $SIZE"
+            done
+          else
+            find dist -type f -name "*.exe" | while read file; do
+              echo "Found artifact: $file"
+              SIZE=$(du -h "$file" | cut -f1)
+              echo " - Size: $SIZE"
+            done
+          fi
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
+            dist/**/*.exe
+            dist/**/*.deb
+            dist/**/*.AppImage
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
