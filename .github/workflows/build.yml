@@ -75,6 +75,20 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
+      # Free up disk space on macOS runners
+      - name: Free up disk space on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          echo "Freeing up disk space on macOS runner"
+          # Remove unnecessary large directories
+          sudo rm -rf /Library/Developer/CommandLineTools
+          sudo rm -rf /Library/Java
+          # Remove cached downloads
+          sudo rm -rf ~/Library/Caches/*
+          # Show available space
+          df -h
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -156,6 +170,7 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' }}
 
+      # Package application with improved error handling for macOS
       - name: Package Application
         run: ${{ matrix.package_cmd }}
         env:
@@ -170,6 +185,18 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' }}
           # Enable debug for electron-builder
           DEBUG: electron-builder
+        
+      # Special fallback for macOS builds if standard packaging fails
+      - name: Fallback macOS Build (if main build fails)
+        if: failure() && runner.os == 'macOS'
+        run: |
+          echo "Main build failed, trying alternative approach..."
+          # Try direct electron-builder command with explicit parameters
+          npm run vite build
+          npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: List Build Output (Unix)
         if: runner.os != 'Windows'
@@ -239,6 +266,10 @@ jobs:
             # Verify if package.json mac target includes dmg
             echo "Checking package.json mac target configuration..."
             grep -A 10 '"mac":' package.json
+
+            # Ensure executable permissions are set for macOS app
+            echo "Setting executable permissions for any app bundles..."
+            find release-builds -name "*.app" -type d -exec chmod -R +x {}/Contents/MacOS/* \; || echo "No app bundles found"
           fi
         shell: bash
 
