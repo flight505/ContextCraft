@@ -92,6 +92,10 @@ async function buildMacApp() {
       
       // Set environment variables to skip code signing
       process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+      log('Environment variables set for build:');
+      log(`- CSC_IDENTITY_AUTO_DISCOVERY: ${process.env.CSC_IDENTITY_AUTO_DISCOVERY}`);
+      log(`- DISABLE_NOTARIZATION: ${process.env.DISABLE_NOTARIZATION}`);
+      log(`- CI: ${process.env.CI}`);
     } else {
       log('Code signing will be attempted');
       
@@ -135,6 +139,11 @@ async function buildMacApp() {
           }
         }
       }
+    }
+    
+    // When skipping signing, explicitly disable notarization as well
+    if (skipSigning || process.env.CSC_IDENTITY_AUTO_DISCOVERY === 'false') {
+      process.env.DISABLE_NOTARIZATION = 'true';
     }
     
     // Run the Vite build first
