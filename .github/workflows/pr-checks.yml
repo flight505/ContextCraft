@@ -117,6 +117,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: electron-builder,electron-osx-sign*
+          CI: true
       
       - name: Debug build output
         if: always()
