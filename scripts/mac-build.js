@@ -103,25 +103,36 @@ async function buildMacApp() {
         console.warn(`⚠️ Warning: Missing required environment variables for code signing: ${missingVars.join(', ')}`);
         console.warn('Code signing may fail without these variables.');
         
-        const readline = createInterface({
-          input: process.stdin,
-          output: process.stdout
-        });
+        // Detect if running in CI environment
+        const isCI = process.env.CI === 'true' || process.env.CI === true;
         
-        const response = await new Promise(resolve => {
-          readline.question('Continue with build without code signing? (y/n) ', answer => {
-            readline.close();
-            resolve(answer.toLowerCase());
-          });
-        });
-        
-        if (response === 'y' || response === 'yes') {
-          log('Continuing with build without code signing');
+        if (isCI) {
+          // In CI, automatically continue without signing
+          log('CI environment detected - automatically continuing without code signing');
           process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
           buildCommand += ' --publish=never';
         } else {
-          console.log('Build canceled by user');
-          process.exit(1);
+          // Only prompt in interactive environments
+          const readline = createInterface({
+            input: process.stdin,
+            output: process.stdout
+          });
+          
+          const response = await new Promise(resolve => {
+            readline.question('Continue with build without code signing? (y/n) ', answer => {
+              readline.close();
+              resolve(answer.toLowerCase());
+            });
+          });
+          
+          if (response === 'y' || response === 'yes') {
+            log('Continuing with build without code signing');
+            process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+            buildCommand += ' --publish=never';
+          } else {
+            console.log('Build canceled by user');
+            process.exit(1);
+          }
         }
       }
     }
