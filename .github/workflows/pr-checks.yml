@@ -186,4 +186,23 @@ jobs:
             release-builds/**/*
             dist/**/*
             logs/**/*
-          retention-days: 7 
+          retention-days: 7
+
+  test-macos:
+    name: Test macOS build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Test macOS build
+        run: |
+          echo "Testing macOS build with signing disabled..."
+          DEBUG=electron-builder,electron-osx-sign* npm run test-build:mac-no-sign
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+          DISABLE_NOTARIZATION: true
+          CSC_IDENTITY_AUTO_DISCOVERY: false 

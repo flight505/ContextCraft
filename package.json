@@ -89,6 +89,7 @@
         ]
       }
     ],
+    "afterSign": "scripts/notarize.js",
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "public/favicon.icns",
@@ -97,7 +98,7 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "afterSign": "scripts/notarize.js"
+      "notarize": true
     },
     "win": {
       "target": [
