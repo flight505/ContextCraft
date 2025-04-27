@@ -1,0 +1,29 @@
+---
+description: You can get information from github, using API
+globs: 
+alwaysApply: false
+---
+Interacting with the GitHub API via `curl` is a powerful way to get specific information or perform actions programmatically.
+
+Here's a table with some useful `curl` commands for working with GitHub Pull Requests via the API, similar to the one we discussed. Remember to replace `{owner}`, `{repo}`, `{pull_number}`, and `{commit_sha}` with your specific details, and ensure your `GITHUB_TOKEN` environment variable is set.
+
+| Command                                                                                                | Description                                                                                               | When to Use                                                                                                                               |
+| :----------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/pulls`     | Lists all Pull Requests in a repository.                                                                  | When you want to see all open or closed PRs in a repo, perhaps to get a list of PR numbers or their titles.                              |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}` | Gets the details of a specific Pull Request.                                                              | To get comprehensive information about a single PR, including its state, title, body, creator, and head/base commit SHAs.                 |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/commits` | Lists the commits in a specific Pull Request.                                                             | To see the individual commits that make up a PR, useful for reviewing the history or getting commit SHAs.                               |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/files` | Lists the files changed in a specific Pull Request.                                                       | To see which files were added, modified, or deleted in a PR and get details like the number of additions and deletions per file.          |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/commits/{commit_sha}/check-runs` | Lists the Check Runs associated with a specific commit.                                                   | To get details about automated checks (like GitHub Actions workflows) that ran against a commit, including their status and conclusion.     |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/commits/{commit_sha}/statuses` | Lists the Commit Statuses associated with a specific commit.                                              | To get details about statuses reported by integrations (older Statuses API) against a commit, including their state and description.      |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/repos/{owner}/{repo}/issues/{pull_number}/comments` | Lists the comments on a specific Pull Request (PRs are also considered issues in the API).                | To retrieve all comments made on a PR, useful for tracking discussions or building a summary of feedback.                                 |
+| `curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST -d '{"body": "Your comment text here"}' https://api.github.com/repos/{owner}/{repo}/issues/{pull_number}/comments` | Creates a comment on a specific Pull Request.                                                             | To programmatically add a comment to a PR, perhaps from a script reporting test results or other automated feedback. **Requires write access.** |
+
+**Important Notes:**
+
+*   **Authentication:** All these commands require authentication using a Personal Access Token (PAT) with appropriate scopes (at least `repo` for most read operations).
+*   **Rate Limits:** The GitHub API has rate limits. If you make too many requests in a short period, you might get throttled.
+*   **Pagination:** For resources with many items (like lists of PRs, commits, or files), the API results are paginated. You might need to make multiple requests to get all results if there are more than 30 (the default per page) or 100 (the maximum per page). Look for the `Link` header in the response to find the next page URL.
+*   **JSON Output:** The output of these commands is in JSON format. You can use tools like `jq` to parse and filter this output.
+
+This table should give you a good starting point for exploring your PR information using the GitHub API via `curl`.
+
