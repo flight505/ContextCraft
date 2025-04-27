@@ -9,8 +9,9 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
     
     steps:
       - name: Check out Git repository
@@ -122,7 +123,7 @@ jobs:
           # Then run the electron-builder
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "Building for macOS with electron-builder..."
-            npm run build:mac
+            npm run package:mac
             
             # Debug output for macOS builds
             echo "Listing release-builds directory content:"
@@ -162,8 +163,8 @@ jobs:
               chmod -R +x "$app_path/Contents/MacOS/" || echo "Failed to set permissions"
               ls -la "$app_path/Contents/MacOS/"
             done
-          else
-            npm run build:electron
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npm run package:win
           fi
 
       - name: List Build Output
@@ -175,14 +176,8 @@ jobs:
               SIZE=$(du -h "$file" | cut -f1)
               echo " - Size: $SIZE"
             done
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            find dist -type f -name "*.AppImage" -o -name "*.deb" | while read file; do
-              echo "Found artifact: $file"
-              SIZE=$(du -h "$file" | cut -f1)
-              echo " - Size: $SIZE"
-            done
           else
-            find dist -type f -name "*.exe" | while read file; do
+            find release-builds -type f -name "*.exe" | while read file; do
               echo "Found artifact: $file"
               SIZE=$(du -h "$file" | cut -f1)
               echo " - Size: $SIZE"
@@ -195,9 +190,7 @@ jobs:
           files: |
             release-builds/**/*.dmg
             release-builds/**/*.zip
-            dist/**/*.exe
-            dist/**/*.deb
-            dist/**/*.AppImage
+            release-builds/**/*.exe
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
