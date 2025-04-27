@@ -1,6 +1,6 @@
 {
   "name": "contextcraft",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
@@ -178,7 +178,7 @@
     "cross-env": "^7.0.3",
     "dotenv": "^16.5.0",
     "electron": "^34.3.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^26.0.12",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",

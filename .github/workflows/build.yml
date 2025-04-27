@@ -1,436 +1,62 @@
-name: Build and Release CI
+name: Build and Release
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  validate:
-    name: Validate Code
-    runs-on: ubuntu-latest
-    # Always run validation, regardless of trigger
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-        continue-on-error: false
-
-      - name: Lint code
-        run: npm run lint || true
-
-      - name: Build Vite app
-        run: npm run build
-        env:
-          CI: true
-
-  build_and_release:
-    name: Build for ${{ matrix.os }}
-    needs: validate
-    # Only run build job if it's a tag push or manually triggered
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        include:
-          - os: macos-latest
-            package_cmd: npm run package:mac -- --verbose
-            artifact_pattern: |
-              release-builds/**/*.dmg
-              release-builds/**/*.zip
-            release_glob: |
-              release-builds/**/*.dmg
-              release-builds/**/*.zip
-          - os: windows-latest
-            package_cmd: npm run package:win -- --verbose
-            artifact_pattern: |
-              release-builds/**/*.exe
-              release-builds/**/*.msi
-            release_glob: release-builds/**/*.exe
-          - os: ubuntu-latest
-            package_cmd: npm run package:linux -- --verbose
-            artifact_pattern: |
-              release-builds/**/*.AppImage
-              release-builds/**/*.deb
-              release-builds/**/*.rpm
-            release_glob: release-builds/**/*.AppImage
+        os: [macos-latest, windows-latest]
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Free up disk space on macOS runners
-      - name: Free up disk space on macOS
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          echo "Freeing up disk space on macOS runner"
-          # Remove unnecessary large directories
-          sudo rm -rf /Library/Developer/CommandLineTools
-          sudo rm -rf /Library/Java
-          # Remove cached downloads
-          sudo rm -rf ~/Library/Caches/*
-          # Show available space
-          df -h
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
 
-      - name: Debug - Environment info
+      - run: npm ci
+
+      - name: Verify signing credentials (macOS only)
+        if: matrix.os == 'macos-latest'
         run: |
-          echo "OS: ${{ runner.os }}"
-          echo "Node: $(node -v)"
-          echo "NPM: $(npm -v)"
-          echo "Working directory: $(pwd)"
-          echo "Repository: ${{ github.repository }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Event name: ${{ github.event_name }}"
-          echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
+          if [ -z "${{ secrets.APPLE_ID }}" ]; then echo "❌ APPLE_ID is not set"; exit 1; fi
+          if [ -z "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then echo "❌ APPLE_APP_SPECIFIC_PASSWORD is not set"; exit 1; fi
+          if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "❌ APPLE_TEAM_ID is not set"; exit 1; fi
+          if [ -z "${{ secrets.CSC_LINK }}" ]; then echo "❌ CSC_LINK is not set"; exit 1; fi
+          if [ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]; then echo "❌ CSC_KEY_PASSWORD is not set"; exit 1; fi
 
-      - name: Install dependencies
-        run: npm install
-        continue-on-error: false
-
-      - name: List installed packages
-        run: npm list --depth=0 || true
-
-      - name: Build Vite app
-        run: npm run build
-        env:
-          CI: true
-
-      - name: Debug - Project structure before build (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
+      - name: Build app
         run: |
-          echo "Package.json contents (build section):"
-          Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
-          
-          echo "Project structure:"
-          Get-ChildItem -Recurse -Depth 2 | Where-Object { -not $_.FullName.Contains("node_modules") -and -not $_.FullName.Contains(".git") } | Select-Object FullName
-
-      - name: Debug - Project structure before build (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          echo "Package.json contents (build section):"
-          grep -A 50 '"build":' package.json
-          
-          echo "Project structure:"
-          find . -type d -not -path "*/node_modules/*" -not -path "*/.git/*" -maxdepth 3 | sort
-
-      - name: Create release-builds directory
-        run: mkdir -p release-builds
-        shell: bash
-
-      # Verify Apple signing credentials (macOS only)
-      - name: Verify Apple signing credentials
-        if: runner.os == 'macOS'
-        run: |
-          echo "Verifying Apple signing credentials..."
-          echo "APPLE_ID is set: ${{ secrets.APPLE_ID != '' }}"
-          echo "APPLE_APP_SPECIFIC_PASSWORD is set: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD != '' }}"
-          echo "APPLE_TEAM_ID is set: ${{ secrets.APPLE_TEAM_ID != '' }}"
-          echo "CSC_LINK is set: ${{ secrets.CSC_LINK != '' }}"
-          echo "CSC_KEY_PASSWORD is set: ${{ secrets.CSC_KEY_PASSWORD != '' }}"
-          echo "CSC_IDENTITY_AUTO_DISCOVERY is set to: ${{ runner.os == 'macOS' }}"
-          
-          # Check for empty values (content length)
-          if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then
-            echo "APPLE_TEAM_ID is properly set with content"
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            node scripts/mac-build.js --verbose
           else
-            echo "⚠️ WARNING: APPLE_TEAM_ID appears to be empty!"
+            npm run package:win
           fi
-        shell: bash
-
-      # Run diagnostics script for macOS builds
-      - name: Run build diagnostics for macOS
-        if: runner.os == 'macOS'
-        run: |
-          echo "Running build diagnostics to gather detailed environment information..."
-          node scripts/diagnose-build.js
-        shell: bash
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' }}
 
-      # Package application with improved error handling for macOS
-      - name: Package Application
-        run: |
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            if [[ -n "${{ secrets.APPLE_ID }}" && -n "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" && -n "${{ secrets.APPLE_TEAM_ID }}" ]]; then
-              echo "All macOS signing credentials found, proceeding with signed build..."
-              ${{ matrix.package_cmd }}
-            else
-              echo "⚠️ Signing credentials incomplete, falling back to unsigned build..."
-              # Skip signing for this build
-              npm run build
-              npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing
-            fi
-          else
-            # Non-macOS builds proceed normally
-            ${{ matrix.package_cmd }}
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Set environment variables for code signing and notarization (macOS only)
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          # Enable code signing and notarization for macOS builds
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' }}
-          # Enable debug for electron-builder
-          DEBUG: electron-builder
-        shell: bash
-
-      # Special debug for macOS builds
-      - name: Electron Builder Debug (macOS Only)
-        if: failure() && runner.os == 'macOS'
-        shell: bash
-        run: |
-          echo "=== 🔍 ELECTRON BUILDER DEBUG INFO ==="
-          
-          # Check electron-builder version
-          echo "Electron-builder version:"
-          npx electron-builder --version
-          
-          # Check electron version
-          echo "Electron version:"
-          npm list electron
-          
-          # Try running with verbose debug
-          echo "Running electron-builder with debug flags..."
-          DEBUG=electron-builder npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing --debug
-          
-          # Check electron-builder cache
-          echo "Checking electron-builder cache directories:"
-          find ~/Library/Caches/electron-builder/ 2>/dev/null || echo "No electron-builder cache found"
-          
-          # Check temporary directories
-          echo "Checking temp directories:"
-          ls -la $TMPDIR | grep electron || echo "No electron temp files found"
-          
-          # Check native module rebuilds
-          echo "Checking native module issues:"
-          npm rebuild || echo "Native module rebuild failed"
-          
-          echo "=== 🔍 END DEBUG INFO ==="
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: electron-builder
-
-      # Special fallback for macOS builds if standard packaging fails
-      - name: Fallback macOS Build (if main build fails)
-        if: failure() && runner.os == 'macOS'
-        run: |
-          echo "Main build failed, trying alternative approach..."
-          # Fix: Use 'npm run build' instead of 'npm run vite build'
-          npm run build
-          npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          
-      # Emergency fallback with minimal configuration if all else fails
-      - name: Emergency Fallback Build (macOS)
-        if: failure() && runner.os == 'macOS'
-        shell: bash
-        run: |
-          echo "🚨 All previous build attempts failed. Trying emergency minimal build..."
-          
-          # Ensure dist directory exists
-          npm run build
-          
-          # Create a minimal electron-builder config
-          echo '{
-            "appId": "com.contextcraft.app",
-            "productName": "ContextCraft",
-            "directories": {
-              "output": "release-builds-minimal"
-            },
-            "files": ["dist/**/*"],
-            "mac": {
-              "target": "zip",
-              "identity": null,
-              "hardenedRuntime": false,
-              "gatekeeperAssess": false,
-              "entitlements": null,
-              "entitlementsInherit": null,
-              "notarize": false
-            }
-          }' > minimal-builder-config.json
-          
-          # Run with minimal config
-          npx electron-builder --config minimal-builder-config.json --mac --skip-signing
-          
-          # Check if build succeeded
-          if [ -d "release-builds-minimal" ]; then
-            echo "✅ Emergency build succeeded. Files in release-builds-minimal:"
-            ls -la release-builds-minimal
-            # Copy files to regular release-builds for artifact upload
-            mkdir -p release-builds
-            cp -r release-builds-minimal/* release-builds/
-          else
-            echo "❌ Emergency build failed."
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          DEBUG: electron-builder
-
-      - name: List Build Output (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "Listing output in release-builds..."
-          ls -lha release-builds/ || echo "release-builds directory not found or empty."
-          
-          echo "Listing dist directory..."
-          ls -lha dist/ || echo "dist directory not found or empty."
-          
-          echo "Finding specific files..."
-          find . -type f \( -name "ContextCraft*.dmg" -o -name "ContextCraft*.zip" -o -name "ContextCraft*.exe" -o -name "ContextCraft*.msi" -o -name "ContextCraft*.AppImage" -o -name "ContextCraft*.deb" -o -name "ContextCraft*.rpm" \) | grep -v "node_modules" || echo "No expected artifacts found."
-        shell: bash
-
-      - name: List Build Output (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          echo "Listing output in release-builds..."
-          if (Test-Path -Path release-builds) { 
-            Get-ChildItem -Path release-builds -Force -Recurse
-          } else { 
-            echo "release-builds directory not found or empty."
-          }
-          
-          echo "Listing dist directory..."
-          if (Test-Path -Path dist) { 
-            Get-ChildItem -Path dist -Force 
-          } else { 
-            echo "dist directory not found or empty."
-          }
-          
-          echo "Finding specific files..."
-          Get-ChildItem -Path . -Recurse -Include "ContextCraft*.dmg","ContextCraft*.zip","ContextCraft*.exe","ContextCraft*.msi","ContextCraft*.AppImage","ContextCraft*.deb","ContextCraft*.rpm" -ErrorAction SilentlyContinue
-
-      - name: Debug build output location
-        run: |
-          echo "Project root contents:"
-          ls -la
-          
-          echo "Looking for all build artifacts recursively:"
-          find . -type f \( -name "ContextCraft*.dmg" -o -name "ContextCraft*.zip" -o -name "ContextCraft*.exe" -o -name "ContextCraft*.AppImage" -o -name "ContextCraft*.deb" -o -name "ContextCraft*.rpm" \) | grep -v "node_modules" || echo "No expected artifacts found."
-        shell: bash
-
-      # Verify release assets are ready
-      - name: Verify release assets
-        if: startsWith(github.ref, 'refs/tags/')
-        shell: bash
-        run: |
-          echo "=== RELEASE ASSETS VERIFICATION ==="
-          echo "These files will be attached to the GitHub release:"
-          
-          # Create an array to track artifacts
-          declare -a ARTIFACTS
-          
-          # Check each artifact type
-          for PATTERN in "*.dmg" "*.zip" "*.exe" "*.AppImage" "*.deb" "*.rpm"; do
-            echo "Checking for $PATTERN"
-            FILES=$(find release-builds -name "$PATTERN" 2>/dev/null || echo "")
-            if [ -n "$FILES" ]; then
-              echo "$FILES" | while read FILE; do
-                SIZE=$(du -h "$FILE" | cut -f1)
-                echo "✅ FOUND: $FILE ($SIZE)"
-                ARTIFACTS+=("$FILE")
-              done
-            else
-              echo "❌ NO MATCHES: $PATTERN"
-            fi
-          done
-          
-          # Summary
-          ARTIFACT_COUNT=${#ARTIFACTS[@]}
-          echo ""
-          echo "Total release artifacts found: $ARTIFACT_COUNT"
-          if [ $ARTIFACT_COUNT -eq 0 ]; then
-            echo "⚠️ WARNING: No release artifacts were found!"
-            echo "The GitHub release may be created without any files to download."
-          fi
-
-      # Special debug for macOS builds
-      - name: Debug macOS artifacts
-        if: runner.os == 'macOS'
-        run: |
-          echo "Detailed macOS artifact search:"
-          find . -name "*.dmg" -o -name "*.zip" | sort
-          
-          echo "Contents of release-builds directory (recursive):"
-          find release-builds -type f | sort
-          
-          echo "DMG file info (if exists):"
-          find . -name "*.dmg" -exec file {} \;
-          
-          # If no DMG file found, output electron-builder debug info
-          if [ $(find . -name "*.dmg" | wc -l) -eq 0 ]; then
-            echo "No DMG files found. Running macOS diagnostic script again..."
-            node scripts/diagnose-build.js
-            
-            # Show electron-builder temporary directory contents if it exists
-            echo "Checking electron-builder temp directories..."
-            ls -la ~/Library/Caches/electron-builder/ || echo "electron-builder cache not found"
-            
-            # Verify if package.json mac target includes dmg
-            echo "Checking package.json mac target configuration..."
-            grep -A 10 '"mac":' package.json
-
-            # Ensure executable permissions are set for macOS app
-            echo "Setting executable permissions for any app bundles..."
-            find release-builds -name "*.app" -type d -exec chmod -R +x {}/Contents/MacOS/* \; || echo "No app bundles found"
-          fi
-        shell: bash
-
-      - name: Upload Build Artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-build
-          path: ${{ matrix.artifact_pattern }}
-          if-no-files-found: warn
-
-      # Failsafe for macOS builds - upload whatever we have
-      - name: Upload macOS artifacts (failsafe)
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-build-all
           path: |
-            release-builds/**/*
-          if-no-files-found: warn
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
+            release-builds/**/*.exe
+            release-builds/**/*.msi
 
-      - name: Create Release
+      - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -438,11 +64,8 @@ jobs:
             release-builds/**/*.dmg
             release-builds/**/*.zip
             release-builds/**/*.exe
-            release-builds/**/*.AppImage
-            release-builds/**/*.deb
-            release-builds/**/*.rpm
-          fail_on_unmatched_files: false 
-          draft: true
+            release-builds/**/*.msi
+          draft: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
