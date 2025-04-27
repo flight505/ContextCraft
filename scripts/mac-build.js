@@ -68,8 +68,61 @@ function ensureExecutablePermissions(appPath) {
   }
 }
 
+// Add new attemptForceDetach function
+async function attemptForceDetach(dmgFilePath) {
+  const dmgName = path.basename(dmgFilePath);
+  log(`Attempting to ensure DMG is detached: ${dmgName}`);
+
+  // Try to find the associated /dev/disk identifier using hdiutil info
+  // This is more reliable than guessing or hardcoding /dev/diskX
+  let diskIdentifier = null;
+  try {
+    // List attached images and grep for the DMG filename or a known volume name
+    // NOTE: Adjust grep pattern if your volume name is different from the DMG name base
+    const hdiutilInfo = execSync(`hdiutil info | grep "${dmgName}" | grep "/dev/disk"`).toString();
+    const match = hdiutilInfo.match(/(\/dev\/disk\d+)/);
+    if (match && match[1]) {
+      diskIdentifier = match[1];
+      log(`Found potentially mounted disk identifier: ${diskIdentifier} for ${dmgName}`);
+    } else {
+      log(`No specific /dev/disk found mounted for ${dmgName}. It might already be detached.`);
+      return true; // Assume detached if not found in info
+    }
+  } catch (infoError) {
+    // Grep failing likely means it's not mounted, which is good.
+    log(`Info check suggests ${dmgName} is not mounted or inaccessible.`);
+    return true;
+  }
+
+  log(`Attempting to detach ${diskIdentifier}...`);
+  const maxRetries = 5;
+  let success = false;
+  for (let i = 1; i <= maxRetries; i++) {
+    try {
+      // Use -force and -quiet
+      execSync(`hdiutil detach "${diskIdentifier}" -force -quiet`);
+      log(`Successfully detached ${diskIdentifier} on attempt ${i}.`);
+      success = true;
+      break; // Exit loop on success
+    } catch (error) {
+      log(`Detach attempt ${i} for ${diskIdentifier} failed (Code: ${error.status}). Retrying in ${i * 2}s...`);
+      if (i < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, i * 2000)); // Wait 2, 4, 6, 8 seconds
+      } else {
+        console.error(`❌ Failed to detach ${diskIdentifier} after ${maxRetries} attempts.`);
+        if (error.stderr) console.error("Last detach stderr:", error.stderr.toString());
+        if (error.stdout) console.error("Last detach stdout:", error.stdout.toString());
+        // Optionally, try detaching by mount point if known (less reliable)
+        // Example: execSync(`diskutil unmount force /Volumes/YourVolumeName`);
+      }
+    }
+  }
+  return success;
+}
+
 // Main build function
 async function buildMacApp() {
+  let buildSuccess = false; // Track overall success
   try {
     log('Starting macOS build process...');
 
@@ -268,6 +321,24 @@ async function buildMacApp() {
       log(`Found ${zipFiles.length} ZIP file(s).`);
     }
 
+    // *** ADD FINAL DETACH ATTEMPT HERE ***
+    log('Attempting final cleanup of any potentially mounted DMGs...');
+    const potentialDMGs = outputFiles.filter(f => f.endsWith('.dmg')).map(f => path.join(releasePath, f));
+    let allDetached = true;
+    for (const dmgPath of potentialDMGs) {
+      if (!await attemptForceDetach(dmgPath)) {
+        allDetached = false; // Mark if any detach failed after retries
+      }
+    }
+    if (!allDetached) {
+       console.warn("⚠️ Failed to detach one or more DMGs after multiple attempts. This might cause issues in subsequent steps.");
+       // Decide if this should be a fatal error for your CI
+       // buildSuccess = false; // Uncomment to make it fail the build
+    } else {
+       log('✅ Final DMG cleanup attempt successful.');
+    }
+    // *** END OF FINAL DETACH ATTEMPT ***
+
     // Create a build info file
     const buildInfoPath = path.join(releasePath, 'build-info.json');
     log(`Creating build info file: ${buildInfoPath}`);
@@ -303,15 +374,24 @@ async function buildMacApp() {
     }
 
     console.log('✅ macOS build script completed.');
-    return true; // Indicate success
-
+    buildSuccess = true; // Mark as successful if we reached here without fatal errors
   } catch (error) {
     console.error('❌ Fatal error during macOS build script execution:', error.message);
     // Don't log stdout/stderr again if it came from execSync, it's part of the message/object
     // if (error.stdout) console.error('stdout:', error.stdout.toString());
     // if (error.stderr) console.error('stderr:', error.stderr.toString());
-    return false; // Indicate failure
+    buildSuccess = false; // Ensure failure on error
+  } finally {
+    // Optional: Add another detach attempt in finally block just in case?
+    // Might be overkill, but could help in complex failure scenarios.
+    log("Performing cleanup check in finally block...");
+    const finalFiles = fs.existsSync(releasePath) ? fs.readdirSync(releasePath) : [];
+    const finalDmgs = finalFiles.filter(f => f.endsWith('.dmg')).map(f => path.join(releasePath, f));
+    for (const dmgPath of finalDmgs) {
+      await attemptForceDetach(dmgPath);
+    }
   }
+  return buildSuccess; // Return the final success status
 }
 
 // --- listFiles function removed as it was unused ---
