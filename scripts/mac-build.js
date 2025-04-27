@@ -123,11 +123,14 @@ async function attemptForceDetach(dmgFilePath) {
 // Main build function
 async function buildMacApp() {
   let buildSuccess = false; // Track overall success
+  
+  // Define release path outside try/catch so it's available in finally block
+  const releasePath = path.resolve(__dirname, '../release-builds');
+  
   try {
     log('Starting macOS build process...');
 
     // Define release path relative to the script location
-    const releasePath = path.resolve(__dirname, '../release-builds');
     cleanupDirectory(releasePath);
 
     // Build command construction
