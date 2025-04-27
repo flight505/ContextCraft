@@ -1,6 +1,6 @@
 {
   "name": "contextcraft",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
@@ -102,7 +102,9 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "notarize": true
+      "notarize": {
+        "teamId": "${env.APPLE_TEAM_ID}"
+      }
     },
     "win": {
       "target": [

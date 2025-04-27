@@ -21,10 +21,10 @@ module.exports = async function (params) {
   );
 
   if (!process.env.APPLE_ID || !process.env.APPLE_APP_SPECIFIC_PASSWORD || !process.env.APPLE_TEAM_ID) {
-    console.warn('Required environment variables missing for notarization. Set:');
-    console.warn('- APPLE_ID: Your Apple ID email');
-    console.warn('- APPLE_APP_SPECIFIC_PASSWORD: App-specific password');
-    console.warn('- APPLE_TEAM_ID: Your Apple Team ID');
+    console.warn('Required environment variables missing for notarization:');
+    console.warn('- APPLE_ID: ' + (process.env.APPLE_ID ? 'Set ✅' : 'Missing ❌'));
+    console.warn('- APPLE_APP_SPECIFIC_PASSWORD: ' + (process.env.APPLE_APP_SPECIFIC_PASSWORD ? 'Set ✅' : 'Missing ❌'));
+    console.warn('- APPLE_TEAM_ID: ' + (process.env.APPLE_TEAM_ID ? 'Set ✅' : 'Missing ❌'));
     
     // Don't fail the build if we're in CI, just skip notarization
     if (process.env.CI === 'true' || process.env.CI === true) {

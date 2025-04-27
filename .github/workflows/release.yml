@@ -50,7 +50,18 @@ jobs:
         shell: bash # Ensure bash for [[ syntax
         run: |
           echo "Checking Apple signing environment variables..."
-          # ... (your secret checks here) ...
+          echo "APPLE_ID is set: ${{ secrets.APPLE_ID != '' }}"
+          echo "APPLE_APP_SPECIFIC_PASSWORD is set: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD != '' }}"
+          echo "APPLE_TEAM_ID is set: ${{ secrets.APPLE_TEAM_ID != '' }}"
+          echo "CSC_LINK is set: ${{ secrets.CSC_LINK != '' }}"
+          echo "CSC_KEY_PASSWORD is set: ${{ secrets.CSC_KEY_PASSWORD != '' }}"
+          
+          # Check for empty values (content length)
+          if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then
+            echo "APPLE_TEAM_ID is properly set with content"
+          else
+            echo "⚠️ WARNING: APPLE_TEAM_ID appears to be empty!"
+          fi
 
           # Clean previous builds (optional, electron-builder usually handles this)
           echo "Cleaning previous builds directory..."
