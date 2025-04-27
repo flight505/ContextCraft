@@ -1,10 +1,11 @@
 {
   "name": "contextcraft",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "vite",
+    "vite": "vite build",
     "dev:electron": "cross-env ELECTRON_START_URL=http://localhost:5173 node scripts/dev.js",
     "dev:c++20": "node scripts/dev-with-c++20.js",
     "build": "vite build",
@@ -14,6 +15,8 @@
     "test-build:mac": "node scripts/test-local-build.js mac",
     "test-build:mac-full": "node scripts/test-local-mac-build.js",
     "test-build:mac-no-sign": "node scripts/test-local-mac-build.js --skip-signing",
+    "test-build:mac-unsigned": "vite build && electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing",
+    "test-build:mac-diagnostics": "node -e \"console.log('=== macOS Build Diagnostics ===\\n\\nElectron-builder version:', require('electron-builder/package.json').version, '\\nElectron version:', require('electron/package.json').version, '\\nMac OS version:', require('os').release())\"",
     "test-build:win": "node scripts/test-local-build.js win",
     "test-build:linux": "node scripts/test-local-build.js linux",
     "test-build:cross": "node scripts/cross-platform-build.js",
@@ -103,7 +106,8 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "notarize": {
-        "teamId": "${env.APPLE_TEAM_ID}"
+        "teamId": "${env.APPLE_TEAM_ID}",
+        "appBundleId": "com.contextcraft.app"
       }
     },
     "win": {

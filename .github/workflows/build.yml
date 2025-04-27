@@ -179,7 +179,21 @@ jobs:
 
       # Package application with improved error handling for macOS
       - name: Package Application
-        run: ${{ matrix.package_cmd }}
+        run: |
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            if [[ -n "${{ secrets.APPLE_ID }}" && -n "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" && -n "${{ secrets.APPLE_TEAM_ID }}" ]]; then
+              echo "All macOS signing credentials found, proceeding with signed build..."
+              ${{ matrix.package_cmd }}
+            else
+              echo "⚠️ Signing credentials incomplete, falling back to unsigned build..."
+              # Skip signing for this build
+              npm run build
+              npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing
+            fi
+          else
+            # Non-macOS builds proceed normally
+            ${{ matrix.package_cmd }}
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Set environment variables for code signing and notarization (macOS only)
@@ -192,18 +206,102 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' }}
           # Enable debug for electron-builder
           DEBUG: electron-builder
-        
+        shell: bash
+
+      # Special debug for macOS builds
+      - name: Electron Builder Debug (macOS Only)
+        if: failure() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          echo "=== 🔍 ELECTRON BUILDER DEBUG INFO ==="
+          
+          # Check electron-builder version
+          echo "Electron-builder version:"
+          npx electron-builder --version
+          
+          # Check electron version
+          echo "Electron version:"
+          npm list electron
+          
+          # Try running with verbose debug
+          echo "Running electron-builder with debug flags..."
+          DEBUG=electron-builder npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing --debug
+          
+          # Check electron-builder cache
+          echo "Checking electron-builder cache directories:"
+          find ~/Library/Caches/electron-builder/ 2>/dev/null || echo "No electron-builder cache found"
+          
+          # Check temporary directories
+          echo "Checking temp directories:"
+          ls -la $TMPDIR | grep electron || echo "No electron temp files found"
+          
+          # Check native module rebuilds
+          echo "Checking native module issues:"
+          npm rebuild || echo "Native module rebuild failed"
+          
+          echo "=== 🔍 END DEBUG INFO ==="
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
+
       # Special fallback for macOS builds if standard packaging fails
       - name: Fallback macOS Build (if main build fails)
         if: failure() && runner.os == 'macOS'
         run: |
           echo "Main build failed, trying alternative approach..."
-          # Try direct electron-builder command with explicit parameters
-          npm run vite build
+          # Fix: Use 'npm run build' instead of 'npm run vite build'
+          npm run build
           npx electron-builder --mac --x64 --arm64 --publish=never -c.mac.target=zip -c.mac.identity=null --skip-signing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          
+      # Emergency fallback with minimal configuration if all else fails
+      - name: Emergency Fallback Build (macOS)
+        if: failure() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          echo "🚨 All previous build attempts failed. Trying emergency minimal build..."
+          
+          # Ensure dist directory exists
+          npm run build
+          
+          # Create a minimal electron-builder config
+          echo '{
+            "appId": "com.contextcraft.app",
+            "productName": "ContextCraft",
+            "directories": {
+              "output": "release-builds-minimal"
+            },
+            "files": ["dist/**/*"],
+            "mac": {
+              "target": "zip",
+              "identity": null,
+              "hardenedRuntime": false,
+              "gatekeeperAssess": false,
+              "entitlements": null,
+              "entitlementsInherit": null,
+              "notarize": false
+            }
+          }' > minimal-builder-config.json
+          
+          # Run with minimal config
+          npx electron-builder --config minimal-builder-config.json --mac --skip-signing
+          
+          # Check if build succeeded
+          if [ -d "release-builds-minimal" ]; then
+            echo "✅ Emergency build succeeded. Files in release-builds-minimal:"
+            ls -la release-builds-minimal
+            # Copy files to regular release-builds for artifact upload
+            mkdir -p release-builds
+            cp -r release-builds-minimal/* release-builds/
+          else
+            echo "❌ Emergency build failed."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          DEBUG: electron-builder
 
       - name: List Build Output (Unix)
         if: runner.os != 'Windows'
