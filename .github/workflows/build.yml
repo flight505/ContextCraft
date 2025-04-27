@@ -31,6 +31,24 @@ jobs:
           if [ -z "${{ secrets.CSC_LINK }}" ]; then echo "❌ CSC_LINK is not set"; exit 1; fi
           if [ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]; then echo "❌ CSC_KEY_PASSWORD is not set"; exit 1; fi
 
+      - name: Install macOS Build Prerequisites
+        if: matrix.os == 'macos-latest'
+        run: |
+          xcode-select --install || true
+          brew install python@3 || true
+          npm install -g node-gyp
+
+      - name: Rebuild native modules (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          npm rebuild tree-sitter --build-from-source
+
+      - name: Debug native build failure (macOS only)
+        if: failure() && matrix.os == 'macos-latest'
+        run: |
+          echo "tree-sitter build log:"
+          cat $(find . -name 'npm-debug.log' | head -n 1) || echo "No npm-debug.log found"
+
       - name: Build app
         run: |
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
