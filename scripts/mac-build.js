@@ -117,27 +117,27 @@ async function buildMacApp() {
           buildCommand += ' --publish=never';
         } else {
           // Only prompt in interactive environments
-          const readline = createInterface({
-            input: process.stdin,
-            output: process.stdout
+        const readline = createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+        
+        const response = await new Promise(resolve => {
+          readline.question('Continue with build without code signing? (y/n) ', answer => {
+            readline.close();
+            resolve(answer.toLowerCase());
           });
-          
-          const response = await new Promise(resolve => {
-            readline.question('Continue with build without code signing? (y/n) ', answer => {
-              readline.close();
-              resolve(answer.toLowerCase());
-            });
-          });
-          
-          if (response === 'y' || response === 'yes') {
-            log('Continuing with build without code signing');
-            process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
-            buildCommand += ' --publish=never';
-          } else {
-            console.log('Build canceled by user');
-            process.exit(1);
-          }
+        });
+        
+        if (response === 'y' || response === 'yes') {
+          log('Continuing with build without code signing');
+          process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+          buildCommand += ' --publish=never';
+        } else {
+          console.log('Build canceled by user');
+          process.exit(1);
         }
+      }
       }
     }
     
