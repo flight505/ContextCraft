@@ -57,6 +57,7 @@ module.exports = {
 # Common directories
 node_modules/
 .git/
+.github/
 dist/
 build/
 __pycache__/
@@ -181,8 +182,6 @@ venv/
     "docker-compose.override.yml",
 
     // Misc
-    ".git/**",
-    ".github/**",
     ".gitlab/**",
   ],
 

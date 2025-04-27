@@ -102,21 +102,13 @@ jobs:
         shell: bash
         run: |
           echo "Listing build output in release-builds/:"
-          ls -R release-builds/ # Show all files recursively
+          ls -R release-builds/ || echo "No files found in release-builds"
 
           echo "Finding and sizing primary artifacts:"
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            # Prioritize DMG, then ZIP
-            find release-builds \( -name "*.dmg" -o -name "*.zip" \) -type f | while read file; do
-              SIZE=$(du -h "$file" | cut -f1)
-              echo " - Found: $file ($SIZE)"
-            done
-          else # Assuming Windows
-            find release-builds -name "*.exe" -type f | while read file; do
-              SIZE=$(du -h "$file" | cut -f1)
-              echo " - Found: $file ($SIZE)"
-            done
-          fi
+          find release-builds -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" | while read file; do
+            SIZE=$(du -h "$file" | cut -f1)
+            echo " - Found: $file ($SIZE)"
+          done
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -127,6 +119,11 @@ jobs:
             release-builds/**/*.dmg
             release-builds/**/*.zip
             release-builds/**/*.exe
+            release-builds/**/*.msi
+            release-builds/**/*.AppImage
+            release-builds/**/*.deb
+            release-builds/**/*.rpm
           generate_release_notes: true
+          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

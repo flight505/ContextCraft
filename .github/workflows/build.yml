@@ -241,6 +241,41 @@ jobs:
           find . -type f \( -name "ContextCraft*.dmg" -o -name "ContextCraft*.zip" -o -name "ContextCraft*.exe" -o -name "ContextCraft*.AppImage" -o -name "ContextCraft*.deb" -o -name "ContextCraft*.rpm" \) | grep -v "node_modules" || echo "No expected artifacts found."
         shell: bash
 
+      # Verify release assets are ready
+      - name: Verify release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          echo "=== RELEASE ASSETS VERIFICATION ==="
+          echo "These files will be attached to the GitHub release:"
+          
+          # Create an array to track artifacts
+          declare -a ARTIFACTS
+          
+          # Check each artifact type
+          for PATTERN in "*.dmg" "*.zip" "*.exe" "*.AppImage" "*.deb" "*.rpm"; do
+            echo "Checking for $PATTERN"
+            FILES=$(find release-builds -name "$PATTERN" 2>/dev/null || echo "")
+            if [ -n "$FILES" ]; then
+              echo "$FILES" | while read FILE; do
+                SIZE=$(du -h "$FILE" | cut -f1)
+                echo "✅ FOUND: $FILE ($SIZE)"
+                ARTIFACTS+=("$FILE")
+              done
+            else
+              echo "❌ NO MATCHES: $PATTERN"
+            fi
+          done
+          
+          # Summary
+          ARTIFACT_COUNT=${#ARTIFACTS[@]}
+          echo ""
+          echo "Total release artifacts found: $ARTIFACT_COUNT"
+          if [ $ARTIFACT_COUNT -eq 0 ]; then
+            echo "⚠️ WARNING: No release artifacts were found!"
+            echo "The GitHub release may be created without any files to download."
+          fi
+
       # Special debug for macOS builds
       - name: Debug macOS artifacts
         if: runner.os == 'macOS'
@@ -294,7 +329,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ matrix.release_glob }}
+          files: |
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
+            release-builds/**/*.exe
+            release-builds/**/*.AppImage
+            release-builds/**/*.deb
+            release-builds/**/*.rpm
           fail_on_unmatched_files: false 
           draft: true
           generate_release_notes: true
