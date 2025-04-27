@@ -1,6 +1,3 @@
-const { notarize } = require('@electron/notarize');
-const path = require('path');
-
 module.exports = async function (params) {
   // Only notarize the app on Mac OS
   if (process.platform !== 'darwin') {
@@ -16,6 +13,7 @@ module.exports = async function (params) {
 
   console.log('Notarizing macOS application...');
 
+  const path = require('path');
   const appBundleId = 'com.contextcraft.app';
   const appPath = path.join(
     params.appOutDir,
@@ -40,6 +38,9 @@ module.exports = async function (params) {
     console.log(`Notarizing application at: ${appPath}`);
     console.log(`Using Apple ID: ${process.env.APPLE_ID}`);
     console.log(`Using Team ID: ${process.env.APPLE_TEAM_ID}`);
+    
+    // Use dynamic import for ESModule compatibility
+    const { notarize } = await import('@electron/notarize');
     
     await notarize({
       appPath,
