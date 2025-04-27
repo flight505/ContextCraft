@@ -9,7 +9,7 @@ on:
 
 jobs:
   status-check:
-    name: Validate PR
+    name: PR Status Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,7 +31,7 @@ jobs:
         run: npm run build
 
   macos-build:
-    name: Test macOS Build
+    name: Test build on macos-latest
     needs: status-check
     runs-on: macos-latest
     steps:
@@ -188,21 +188,118 @@ jobs:
             logs/**/*
           retention-days: 7 
 
-  test-macos:
-    name: Test macOS build
-    runs-on: macos-latest
+  ubuntu-test:
+    name: Test build on ubuntu-latest
+    needs: status-check
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
-      - name: Test macOS build
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+        env:
+          CI: true
+      
+      - name: Run Vite build
+        run: npm run build
+        env:
+          CI: true
+      
+      - name: Build Linux app
         run: |
-          echo "Testing macOS build with signing disabled..."
-          DEBUG=electron-builder,electron-osx-sign* npm run test-build:mac-no-sign
+          echo "Building Linux application..."
+          npm run package:linux -- --verbose
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
           CI: true
-          DISABLE_NOTARIZATION: true
-          CSC_IDENTITY_AUTO_DISCOVERY: false 
+      
+      - name: Debug build output
+        if: always()
+        run: |
+          echo "=== Contents of project root ==="
+          ls -la
+          
+          echo "=== Contents of release-builds directory ==="
+          ls -la release-builds || echo "release-builds directory not found!"
+          
+          echo "=== Searching for build artifacts ==="
+          find . -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" | sort
+      
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-build-artifacts
+          path: |
+            release-builds/**/*
+            dist/**/*
+          retention-days: 7
+
+  windows-test:
+    name: Test build on windows-latest
+    needs: status-check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+        env:
+          CI: true
+      
+      - name: Run Vite build
+        run: npm run build
+        env:
+          CI: true
+      
+      - name: Build Windows app
+        run: |
+          echo "Building Windows application..."
+          npm run package:win -- --verbose
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
+          CI: true
+      
+      - name: Debug build output
+        if: always()
+        shell: pwsh
+        run: |
+          echo "Listing output in release-builds..."
+          if (Test-Path -Path release-builds) { 
+            Get-ChildItem -Path release-builds -Force -Recurse
+          } else { 
+            echo "release-builds directory not found or empty."
+          }
+          
+          echo "Finding specific files..."
+          Get-ChildItem -Path . -Recurse -Include "ContextCraft*.exe","ContextCraft*.msi" -ErrorAction SilentlyContinue
+      
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-artifacts
+          path: |
+            release-builds/**/*
+            dist/**/*
+          retention-days: 7 
