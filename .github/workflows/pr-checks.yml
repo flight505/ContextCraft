@@ -179,14 +179,14 @@ jobs:
       
       - name: Upload build artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-build-artifacts
           path: |
             release-builds/**/*
             dist/**/*
             logs/**/*
-          retention-days: 7
+          retention-days: 7 
 
   test-macos:
     name: Test macOS build
