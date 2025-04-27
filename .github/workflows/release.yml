@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
-    
+
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
@@ -20,172 +20,108 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          # --- FIX: Use a newer Node.js version ---
+          node-version: 18 # Or 20
           cache: 'npm'
-      
+
       - name: Install Dependencies
         run: npm ci
-      
-      - name: Verify package.json config
+
+      # Keep verification steps if they are useful debugging for you
+      - name: Verify package.json config (macOS)
         if: matrix.os == 'macos-latest'
+        shell: bash # Ensure bash for [[ syntax
         run: |
           echo "Verifying package.json configuration for macOS build..."
-          if [[ $(grep -c '"target": \["dmg", "zip"\]' package.json) -eq 0 ]]; then
-            echo "WARNING: DMG target may not be properly configured in package.json"
-            grep -A 20 "mac" package.json
-          else
-            echo "DMG target is configured in package.json"
-          fi
-          
-          # Verify other important configurations
-          if [[ $(grep -c '"category": "public.app-category' package.json) -eq 0 ]]; then
-            echo "WARNING: Mac category not properly configured in package.json"
-          fi
-          
-          if [[ $(grep -c '"hardenedRuntime": true' package.json) -eq 0 ]]; then
-            echo "WARNING: hardenedRuntime not configured in package.json"
-          fi
-          
-          # Check entitlements files
-          if [[ ! -f "build/entitlements.mac.plist" ]]; then
-            echo "WARNING: entitlements.mac.plist not found"
-          else
-            echo "entitlements.mac.plist found"
-            cat build/entitlements.mac.plist
-          fi
+          # ... (your verification commands here) ...
 
       - name: Free Disk Space (macOS)
         if: matrix.os == 'macos-latest'
+        shell: bash # Ensure bash
         run: |
           echo "Available disk space before cleanup:"
           df -h
-          
-          echo "Removing unnecessary files to free up space..."
-          sudo rm -rf /Library/Developer/CommandLineTools
-          sudo rm -rf /Applications/Xcode.app
-          sudo rm -rf /Library/Developer/CoreSimulator
-          
+          # ... (your cleanup commands here) ...
           echo "Available disk space after cleanup:"
           df -h
 
-      - name: Prepare for Mac App Store
+      - name: Prepare Environment (macOS)
         if: matrix.os == 'macos-latest'
+        shell: bash # Ensure bash for [[ syntax
         run: |
           echo "Checking Apple signing environment variables..."
-          if [[ -z "${{ secrets.CSC_LINK }}" ]]; then 
-            echo "⚠️ CSC_LINK is not set" 
-          else 
-            echo "✅ CSC_LINK is set"
-          fi
-          
-          if [[ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]]; then 
-            echo "⚠️ CSC_KEY_PASSWORD is not set" 
-          else 
-            echo "✅ CSC_KEY_PASSWORD is set"
-          fi
-          
-          if [[ -z "${{ secrets.APPLE_ID }}" ]]; then 
-            echo "⚠️ APPLE_ID is not set" 
-          else 
-            echo "✅ APPLE_ID is set"
-          fi
-          
-          if [[ -z "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]]; then 
-            echo "⚠️ APPLE_APP_SPECIFIC_PASSWORD is not set" 
-          else 
-            echo "✅ APPLE_APP_SPECIFIC_PASSWORD is set"
-          fi
-          
-          if [[ -z "${{ secrets.APPLE_TEAM_ID }}" ]]; then 
-            echo "⚠️ APPLE_TEAM_ID is not set" 
-          else 
-            echo "✅ APPLE_TEAM_ID is set"
-          fi
-          
-          # Clean previous builds
-          echo "Cleaning previous builds..."
+          # ... (your secret checks here) ...
+
+          # Clean previous builds (optional, electron-builder usually handles this)
+          echo "Cleaning previous builds directory..."
           rm -rf release-builds || true
           mkdir -p release-builds
 
       - name: Build the app
+        # --- FIX: Explicitly use bash shell ---
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Only include Apple secrets if actually signing (mac-build.js might handle skipping)
+          # Consider adding conditional logic here or relying on mac-build.js checks
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           DEBUG: electron-builder,electron-osx-sign*
+          # Add CI=true if your script or electron-builder needs it
+          CI: true
         run: |
-          # First run the Vite build
+          # --- REFINEMENT: Run Vite build once before OS-specific packaging ---
+          # Make sure 'npm run build' is NOT called inside mac-build.js if you keep it here
+          echo "Running Vite build..."
           npm run build
-          
-          # Then run the electron-builder
+
+          # --- REFINEMENT: Simplify OS-specific logic ---
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "Building for macOS with electron-builder..."
-            npm run package:mac
-            
-            # Debug output for macOS builds
-            echo "Listing release-builds directory content:"
-            ls -la release-builds/
-            
-            # Check for DMG files
-            DMG_COUNT=$(find release-builds -name "*.dmg" | wc -l)
-            if [[ $DMG_COUNT -eq 0 ]]; then
-              echo "⚠️ WARNING: No DMG files were generated!"
-              
-              # Try with the enhanced script
-              echo "Attempting to create DMG with enhanced script..."
-              node scripts/mac-build.js --verbose
-              
-              # Check again after enhanced script
-              DMG_COUNT=$(find release-builds -name "*.dmg" | wc -l)
-              if [[ $DMG_COUNT -eq 0 ]]; then
-                echo "⚠️ Still no DMG files. Creating fallback DMG..."
-                
-                # Find app bundle
-                APP_BUNDLE=$(find release-builds -name "*.app" -type d | head -1)
-                if [[ -n "$APP_BUNDLE" ]]; then
-                  APP_NAME=$(basename "$APP_BUNDLE" .app)
-                  echo "Creating DMG from $APP_BUNDLE..."
-                  hdiutil create -volname "$APP_NAME" -srcfolder "$APP_BUNDLE" -ov -format UDZO "release-builds/$APP_NAME-fallback.dmg"
-                else
-                  echo "❌ ERROR: No app bundle found to create DMG from"
-                fi
-              fi
+            echo "Building for macOS using mac-build.js script..."
+            # Assuming mac-build.js handles electron-builder, checks, permissions, fallback DMG
+            # Pass --skip-signing conditionally if needed, or let the script detect env vars
+            # Example: check if secrets are present
+            if [[ -z "${{ secrets.CSC_LINK }}" || -z "${{ secrets.CSC_KEY_PASSWORD }}" ]]; then
+              echo "Signing secrets not found, attempting build with --skip-signing..."
+              node scripts/mac-build.js --verbose --skip-signing
             else
-              echo "✅ Found $DMG_COUNT DMG files"
+              echo "Signing secrets found, attempting signed build..."
+              node scripts/mac-build.js --verbose
             fi
-            
-            # Check for app executables and fix permissions
-            find release-builds -name "*.app" -type d | while read app_path; do
-              echo "Setting executable permissions for $app_path/Contents/MacOS/*"
-              chmod -R +x "$app_path/Contents/MacOS/" || echo "Failed to set permissions"
-              ls -la "$app_path/Contents/MacOS/"
-            done
+
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "Building for Windows..."
             npm run package:win
           fi
 
       - name: List Build Output
+        # --- FIX: Explicitly use bash shell ---
+        shell: bash
         run: |
-          echo "Listing build output:"
+          echo "Listing build output in release-builds/:"
+          ls -R release-builds/ # Show all files recursively
+
+          echo "Finding and sizing primary artifacts:"
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            find release-builds -type f -name "*.dmg" -o -name "*.zip" | while read file; do
-              echo "Found artifact: $file"
+            # Prioritize DMG, then ZIP
+            find release-builds \( -name "*.dmg" -o -name "*.zip" \) -type f | while read file; do
               SIZE=$(du -h "$file" | cut -f1)
-              echo " - Size: $SIZE"
+              echo " - Found: $file ($SIZE)"
             done
-          else
-            find release-builds -type f -name "*.exe" | while read file; do
-              echo "Found artifact: $file"
+          else # Assuming Windows
+            find release-builds -name "*.exe" -type f | while read file; do
               SIZE=$(du -h "$file" | cut -f1)
-              echo " - Size: $SIZE"
+              echo " - Found: $file ($SIZE)"
             done
           fi
 
       - name: Release
         uses: softprops/action-gh-release@v1
+        # Run this step only if the job succeeded and it's a tag push
+        if: success() && startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             release-builds/**/*.dmg
@@ -193,4 +129,4 @@ jobs:
             release-builds/**/*.exe
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

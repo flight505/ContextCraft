@@ -1,6 +1,6 @@
 {
   "name": "contextcraft",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
@@ -28,6 +28,7 @@
     "package:win": "npm run cleanup && node scripts/windows-build.js",
     "package:linux": "npm run cleanup && vite build && electron-builder --linux --publish=never",
     "package:all": "npm run cleanup && vite build && electron-builder -mwl --publish=never",
+    "package:all-no-sign": "node scripts/build-all-platforms-no-sign.js",
     "release": "npm run cleanup && vite build && electron-builder --publish=onTagOrDraft",
     "postinstall": "electron-builder install-app-deps",
     "rebuild-native-modules": "node scripts/rebuild-native-modules.js",
@@ -93,7 +94,10 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "public/favicon.icns",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
@@ -166,6 +170,7 @@
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
     "cross-env": "^7.0.3",
+    "dotenv": "^16.5.0",
     "electron": "^34.3.0",
     "electron-builder": "^24.13.3",
     "eslint": "^8.55.0",

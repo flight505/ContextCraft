@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Helper script for macOS builds
- * Ensures proper C++ standard is used for native modules
+ * Helper script for macOS builds using electron-builder.
+ * Handles environment setup for signing/notarization (or skipping),
+ * executes the build, ensures executable permissions, checks for output artifacts (DMG, ZIP),
+ * provides a fallback to manually create a DMG if needed, and generates a build-info file.
  */
 
 const { execSync } = require('child_process');
@@ -17,7 +19,7 @@ const verbose = args.includes('--verbose');
 // Log helper function that only outputs when verbose is enabled
 function log(message) {
   if (verbose) {
-    console.log(message);
+    console.log(`[mac-build.js] ${message}`); // Added prefix for clarity
   }
 }
 
@@ -36,21 +38,29 @@ function cleanupDirectory(directory) {
 function ensureExecutablePermissions(appPath) {
   log(`Ensuring executable permissions for: ${appPath}`);
   const macOSDir = path.join(appPath, 'Contents', 'MacOS');
-  
+
   if (fs.existsSync(macOSDir)) {
     log(`Found MacOS directory: ${macOSDir}`);
     const files = fs.readdirSync(macOSDir);
-    
+
     log(`Found ${files.length} files in MacOS directory`);
     files.forEach(file => {
       const filePath = path.join(macOSDir, file);
-      log(`Setting executable permissions for: ${filePath}`);
       try {
-        fs.chmodSync(filePath, '755');
         const stats = fs.statSync(filePath);
-        log(`New permissions for ${file}: ${stats.mode.toString(8)}`);
+        // Check if it's a file and doesn't already have execute permission for user
+        if (stats.isFile() && !(stats.mode & fs.constants.S_IXUSR)) {
+           log(`Setting executable permissions (755) for: ${filePath}`);
+           fs.chmodSync(filePath, '755');
+           const updatedStats = fs.statSync(filePath);
+           log(`New permissions for ${file}: ${updatedStats.mode.toString(8)}`);
+        } else if (!stats.isFile()) {
+            log(`Skipping permissions for non-file: ${filePath}`);
+        } else {
+            log(`Executable permissions already set for: ${filePath} (${stats.mode.toString(8)})`);
+        }
       } catch (error) {
-        console.error(`Error setting permissions for ${filePath}:`, error);
+        console.error(`Error processing permissions for ${filePath}:`, error);
       }
     });
   } else {
@@ -58,219 +68,259 @@ function ensureExecutablePermissions(appPath) {
   }
 }
 
-// Function to list all files in a directory recursively
-function listFiles(dir, fileList = []) {
-  const files = fs.readdirSync(dir);
-  
-  files.forEach(file => {
-    const filePath = path.join(dir, file);
-    if (fs.statSync(filePath).isDirectory()) {
-      listFiles(filePath, fileList);
-    } else {
-      fileList.push(filePath);
-    }
-  });
-  
-  return fileList;
-}
-
 // Main build function
 async function buildMacApp() {
   try {
     log('Starting macOS build process...');
-    
-    // Clean up previous builds
+
+    // Define release path relative to the script location
     const releasePath = path.resolve(__dirname, '../release-builds');
     cleanupDirectory(releasePath);
-    
+
     // Build command construction
     let buildCommand = 'npx electron-builder --mac';
-    
+
+    // --- Signing Logic ---
     if (skipSigning) {
-      log('Skipping code signing (--skip-signing flag detected)');
+      log('Skipping code signing (--skip-signing flag detected).');
       buildCommand += ' --publish=never';
-      
-      // Set environment variables to skip code signing
+
+      // Set environment variables to disable signing/notarization
       process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
-      log('Environment variables set for build:');
-      log(`- CSC_IDENTITY_AUTO_DISCOVERY: ${process.env.CSC_IDENTITY_AUTO_DISCOVERY}`);
-      log(`- DISABLE_NOTARIZATION: ${process.env.DISABLE_NOTARIZATION}`);
-      log(`- CI: ${process.env.CI}`);
+      process.env.DISABLE_NOTARIZATION = 'true'; // Explicitly disable notarization when skipping
+      log('Set CSC_IDENTITY_AUTO_DISCOVERY=false');
+      log('Set DISABLE_NOTARIZATION=true');
+
     } else {
-      log('Code signing will be attempted');
-      
-      // Check for required environment variables
+      log('Code signing will be attempted.');
+
+      // Check for required environment variables for signing
       const requiredEnvVars = ['CSC_LINK', 'CSC_KEY_PASSWORD', 'APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID'];
       const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-      
+
       if (missingVars.length > 0) {
         console.warn(`⚠️ Warning: Missing required environment variables for code signing: ${missingVars.join(', ')}`);
-        console.warn('Code signing may fail without these variables.');
-        
+        console.warn('Signing and notarization might fail or be skipped by electron-builder.');
+
         // Detect if running in CI environment
         const isCI = process.env.CI === 'true' || process.env.CI === true;
-        
+
         if (isCI) {
-          // In CI, automatically continue without signing
-          log('CI environment detected - automatically continuing without code signing');
+          // In CI, automatically decide based on missing vars (or let electron-builder handle it)
+          // Forcing skip if critical vars are missing might be safer
+          log('CI environment detected with missing signing variables. Forcing skip signing.');
           process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+          process.env.DISABLE_NOTARIZATION = 'true';
           buildCommand += ' --publish=never';
+          log('Set CSC_IDENTITY_AUTO_DISCOVERY=false');
+          log('Set DISABLE_NOTARIZATION=true');
         } else {
           // Only prompt in interactive environments
-        const readline = createInterface({
-          input: process.stdin,
-          output: process.stdout
-        });
-        
-        const response = await new Promise(resolve => {
-          readline.question('Continue with build without code signing? (y/n) ', answer => {
-            readline.close();
-            resolve(answer.toLowerCase());
+          const readline = createInterface({
+            input: process.stdin,
+            output: process.stdout
           });
-        });
-        
-        if (response === 'y' || response === 'yes') {
-          log('Continuing with build without code signing');
-          process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
-          buildCommand += ' --publish=never';
-        } else {
-          console.log('Build canceled by user');
-          process.exit(1);
+
+          const response = await new Promise(resolve => {
+            readline.question('Continue build potentially without full code signing/notarization? (y/n) ', answer => {
+              readline.close();
+              resolve(answer.toLowerCase());
+            });
+          });
+
+          if (response === 'y' || response === 'yes') {
+            log('User chose to continue despite missing signing variables.');
+            // Let electron-builder attempt signing with available info, or potentially fail.
+            // Alternatively, force skip here too:
+            // process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
+            // process.env.DISABLE_NOTARIZATION = 'true';
+            // buildCommand += ' --publish=never';
+          } else {
+            console.log('Build canceled by user due to missing signing variables.');
+            process.exit(1);
+          }
         }
-      }
+      } else {
+         log('All required signing environment variables appear to be set.');
+         // If you intend to notarize, ensure DISABLE_NOTARIZATION is not true
+         // delete process.env.DISABLE_NOTARIZATION; // Or set to 'false' if needed
       }
     }
-    
-    // When skipping signing, explicitly disable notarization as well
-    if (skipSigning || process.env.CSC_IDENTITY_AUTO_DISCOVERY === 'false') {
-      process.env.DISABLE_NOTARIZATION = 'true';
+
+    // Ensure notarization is explicitly disabled if we forced CSC_IDENTITY_AUTO_DISCOVERY=false
+    if (process.env.CSC_IDENTITY_AUTO_DISCOVERY === 'false') {
+        process.env.DISABLE_NOTARIZATION = 'true';
+        log('Ensured DISABLE_NOTARIZATION=true due to CSC_IDENTITY_AUTO_DISCOVERY=false');
     }
-    
-    // Run the Vite build first
-    log('Running Vite build...');
-    execSync('npm run build', { stdio: 'inherit' });
-    
-    // Execute the build command
+
+    // --- VITE BUILD STEP IS REMOVED - Assumed to be run by the CI workflow before this script ---
+
+    // Execute the electron-builder command
     log(`Executing build command: ${buildCommand}`);
-    execSync(buildCommand, { 
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        DEBUG: process.env.DEBUG || 'electron-builder,electron-osx-sign*'
-      }
-    });
-    
-    // Check the output
+    log(`Using environment: CSC_IDENTITY_AUTO_DISCOVERY=${process.env.CSC_IDENTITY_AUTO_DISCOVERY}, DISABLE_NOTARIZATION=${process.env.DISABLE_NOTARIZATION}, CI=${process.env.CI}`);
+    try {
+      execSync(buildCommand, {
+        stdio: 'inherit', // Show electron-builder output directly
+        env: {
+          ...process.env, // Pass existing environment variables
+          DEBUG: process.env.DEBUG || 'electron-builder,electron-osx-sign*' // Default debug flags if not set
+        }
+      });
+    } catch (buildError) {
+       console.error('❌ Error during electron-builder execution.');
+       // error object from execSync already includes details, no need to log stdout/stderr again unless needed
+       throw buildError; // Re-throw to be caught by the outer catch block
+    }
+
+    // --- Post-Build Checks ---
     log('Checking build output...');
     if (!fs.existsSync(releasePath)) {
-      console.error('Error: Release directory not found after build!');
+      console.error(`Error: Release directory '${releasePath}' not found after build! Check electron-builder config.`);
       process.exit(1);
     }
-    
+
     // Look for app bundles and fix permissions
     const appBundles = fs.readdirSync(releasePath)
-      .filter(file => file.endsWith('.app'))
+      .filter(file => file.endsWith('.app') && fs.statSync(path.join(releasePath, file)).isDirectory())
       .map(file => path.join(releasePath, file));
-    
+
     if (appBundles.length === 0) {
-      console.warn('No .app bundles found in release directory!');
+      console.warn('⚠️ Warning: No .app bundles found in release directory!');
     } else {
-      log(`Found ${appBundles.length} app bundle(s):`);
+      log(`Found ${appBundles.length} app bundle(s). Ensuring executable permissions...`);
       appBundles.forEach(appPath => {
-        log(`- ${appPath}`);
+        log(`- Processing: ${appPath}`);
         ensureExecutablePermissions(appPath);
       });
     }
-    
-    // List all output files
-    const outputFiles = fs.readdirSync(releasePath);
-    log('Build output files:');
+
+    // List all output files and check for DMG/ZIP
+    let outputFiles = [];
+    try {
+        outputFiles = fs.readdirSync(releasePath);
+    } catch (readError) {
+        console.error(`Error reading release directory ${releasePath}: ${readError.message}`);
+        // Continue if possible, maybe the dir exists but is unreadable
+    }
+
+    log(`Build output contents in ${releasePath}:`);
     outputFiles.forEach(file => {
       const filePath = path.join(releasePath, file);
-      const stats = fs.statSync(filePath);
-      const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-      log(`- ${file} (${fileSizeMB} MB)`);
+      try {
+        const stats = fs.statSync(filePath);
+        const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+        const type = stats.isDirectory() ? 'directory' : 'file';
+        log(`- ${file} (${type}, ${fileSizeMB} MB)`);
+      } catch (statError) {
+         log(`- ${file} (Error reading stats: ${statError.message})`);
+      }
     });
-    
-    // Check specifically for DMG files
+
     const dmgFiles = outputFiles.filter(file => file.endsWith('.dmg'));
+    const zipFiles = outputFiles.filter(file => file.endsWith('.zip'));
+
     if (dmgFiles.length === 0) {
       console.warn('⚠️ Warning: No DMG files found in the output!');
-      
-      // If we have app bundles but no DMG, try to create a DMG
+
+      // If we have app bundles but no DMG, try to create a DMG manually
       if (appBundles.length > 0) {
-        log('Attempting to create DMG manually...');
-        const appPath = appBundles[0];
+        log('Attempting to create DMG manually as a fallback...');
+        const appPath = appBundles[0]; // Use the first found app bundle
         const appName = path.basename(appPath, '.app');
-        const dmgPath = path.join(releasePath, `${appName}-manual.dmg`);
-        
+        const dmgPath = path.join(releasePath, `${appName}-manual-fallback.dmg`);
+        log(`Source App: ${appPath}`);
+        log(`Output DMG: ${dmgPath}`);
+
         try {
-          log(`Creating DMG from ${appPath} to ${dmgPath}`);
-          execSync(`hdiutil create -volname "${appName}" -srcfolder "${appPath}" -ov -format UDZO "${dmgPath}"`, { 
-            stdio: verbose ? 'inherit' : 'pipe' 
+          const hdiutilCommand = `hdiutil create -volname "${appName}" -srcfolder "${appPath}" -ov -format UDZO "${dmgPath}"`;
+          log(`Executing: ${hdiutilCommand}`);
+          execSync(hdiutilCommand, {
+            stdio: verbose ? 'inherit' : 'pipe' // Show hdiutil output only if verbose
           });
-          
+
           if (fs.existsSync(dmgPath)) {
             const stats = fs.statSync(dmgPath);
             const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-            console.log(`✅ Successfully created manual DMG: ${dmgPath} (${fileSizeMB} MB)`);
+            console.log(`✅ Successfully created manual fallback DMG: ${dmgPath} (${fileSizeMB} MB)`);
+            // Add the new DMG to our list
+            dmgFiles.push(path.basename(dmgPath));
+            outputFiles.push(path.basename(dmgPath)); // Also add to the main list for build-info
           } else {
-            console.error('Failed to create manual DMG');
+            console.error('❌ Failed to create manual fallback DMG (hdiutil command ran but file not found).');
           }
-        } catch (error) {
-          console.error('Error creating manual DMG:', error.message);
+        } catch (dmgError) {
+          console.error('❌ Error creating manual fallback DMG:');
+          if (dmgError.stderr) console.error("hdiutil stderr:", dmgError.stderr.toString());
+          if (dmgError.stdout) console.error("hdiutil stdout:", dmgError.stdout.toString());
+          if (!dmgError.stderr && !dmgError.stdout) console.error(dmgError.message);
         }
+      } else {
+         log('Skipping manual DMG creation because no .app bundle was found.');
       }
     } else {
-      log(`Found ${dmgFiles.length} DMG file(s):`);
-      dmgFiles.forEach(file => {
-        const filePath = path.join(releasePath, file);
-        const stats = fs.statSync(filePath);
-        const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-        log(`- ${file} (${fileSizeMB} MB)`);
-      });
+      log(`Found ${dmgFiles.length} DMG file(s).`);
     }
-    
-    // Check for ZIP files
-    const zipFiles = outputFiles.filter(file => file.endsWith('.zip'));
+
     if (zipFiles.length === 0) {
-      console.warn('⚠️ Warning: No ZIP files found in the output!');
+      // This might be expected depending on electron-builder config
+      log('No ZIP files found in the output.');
     } else {
-      log(`Found ${zipFiles.length} ZIP file(s):`);
-      zipFiles.forEach(file => {
-        const filePath = path.join(releasePath, file);
-        const stats = fs.statSync(filePath);
-        const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-        log(`- ${file} (${fileSizeMB} MB)`);
-      });
+      log(`Found ${zipFiles.length} ZIP file(s).`);
     }
-    
+
     // Create a build info file
     const buildInfoPath = path.join(releasePath, 'build-info.json');
+    log(`Creating build info file: ${buildInfoPath}`);
     const buildInfo = {
       timestamp: new Date().toISOString(),
-      skipSigning: skipSigning,
-      files: outputFiles.map(file => ({
-        name: file,
-        size: fs.statSync(path.join(releasePath, file)).size,
-        path: path.join(releasePath, file)
-      }))
+      platform: 'macOS',
+      requestedSkipSigning: skipSigning, // User request via flag
+      actualSkipSigning: process.env.CSC_IDENTITY_AUTO_DISCOVERY === 'false', // What actually happened
+      skipNotarization: process.env.DISABLE_NOTARIZATION === 'true',
+      files: outputFiles.map(file => {
+        const filePath = path.join(releasePath, file);
+        let size = -1;
+        let type = 'unknown';
+        try {
+           const stats = fs.statSync(filePath);
+           size = stats.size;
+           type = stats.isDirectory() ? 'directory' : 'file';
+        } catch (e) { /* ignore */ }
+        return {
+          name: file,
+          size: size,
+          type: type,
+          path: filePath // Including full path might be redundant if release dir is known
+        };
+      }).filter(f => f.size !== -1) // Filter out files we couldn't stat
     };
-    
-    fs.writeFileSync(buildInfoPath, JSON.stringify(buildInfo, null, 2));
-    log(`Build info written to ${buildInfoPath}`);
-    
-    console.log('✅ macOS build completed successfully!');
-    return true;
+
+    try {
+      fs.writeFileSync(buildInfoPath, JSON.stringify(buildInfo, null, 2));
+      log(`Build info written successfully.`);
+    } catch(writeError) {
+       console.error(`Error writing build info file ${buildInfoPath}: ${writeError.message}`);
+    }
+
+    console.log('✅ macOS build script completed.');
+    return true; // Indicate success
+
   } catch (error) {
-    console.error('❌ Error during macOS build:', error.message);
-    if (error.stdout) console.error('stdout:', error.stdout.toString());
-    if (error.stderr) console.error('stderr:', error.stderr.toString());
-    return false;
+    console.error('❌ Fatal error during macOS build script execution:', error.message);
+    // Don't log stdout/stderr again if it came from execSync, it's part of the message/object
+    // if (error.stdout) console.error('stdout:', error.stdout.toString());
+    // if (error.stderr) console.error('stderr:', error.stderr.toString());
+    return false; // Indicate failure
   }
 }
 
-// Run the build process
+// --- listFiles function removed as it was unused ---
+
+// Run the main build process and exit with appropriate code
 buildMacApp().then(success => {
   process.exit(success ? 0 : 1);
-}); 
+}).catch(err => {
+  // Catch any unhandled promise rejections from buildMacApp itself
+  console.error('❌ Unhandled rejection during build process:', err);
+  process.exit(1);
+});
