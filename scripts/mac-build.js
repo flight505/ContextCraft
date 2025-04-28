@@ -214,13 +214,11 @@ async function buildMacApp() {
     // Execute the electron-builder command
     log(`Executing build command: ${buildCommand}`);
     log(`Using environment: CSC_IDENTITY_AUTO_DISCOVERY=${process.env.CSC_IDENTITY_AUTO_DISCOVERY}, DISABLE_NOTARIZATION=${process.env.DISABLE_NOTARIZATION}, CI=${process.env.CI}`);
+    const buildEnv = { ...process.env, npm_config_cxx_std: 'c++20', CXXFLAGS: '-std=c++20' };
     try {
       execSync(buildCommand, {
         stdio: 'inherit', // Show electron-builder output directly
-        env: {
-          ...process.env, // Pass existing environment variables
-          DEBUG: process.env.DEBUG || 'electron-builder,electron-osx-sign*' // Default debug flags if not set
-        }
+        env: buildEnv
       });
     } catch (buildError) {
        console.error('❌ Error during electron-builder execution.');
@@ -291,7 +289,8 @@ async function buildMacApp() {
           const hdiutilCommand = `hdiutil create -volname "${appName}" -srcfolder "${appPath}" -ov -format UDZO "${dmgPath}"`;
           log(`Executing: ${hdiutilCommand}`);
           execSync(hdiutilCommand, {
-            stdio: verbose ? 'inherit' : 'pipe' // Show hdiutil output only if verbose
+            stdio: verbose ? 'inherit' : 'pipe', // Show hdiutil output only if verbose
+            env: buildEnv
           });
 
           if (fs.existsSync(dmgPath)) {
