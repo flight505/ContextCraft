@@ -20,7 +20,20 @@ jobs:
           node-version: 18
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install macOS Build Prerequisites
+        if: matrix.os == 'macos-latest'
+        run: |
+          xcode-select --install || true
+          brew install python@3 || true
+
+      - name: Set Python for node-gyp (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "PYTHON=/opt/homebrew/bin/python3" >> $GITHUB_ENV
+          echo "npm_config_python=/opt/homebrew/bin/python3" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Verify signing credentials (macOS only)
         if: matrix.os == 'macos-latest'
@@ -30,24 +43,6 @@ jobs:
           if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "❌ APPLE_TEAM_ID is not set"; exit 1; fi
           if [ -z "${{ secrets.CSC_LINK }}" ]; then echo "❌ CSC_LINK is not set"; exit 1; fi
           if [ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]; then echo "❌ CSC_KEY_PASSWORD is not set"; exit 1; fi
-
-      - name: Install macOS Build Prerequisites
-        if: matrix.os == 'macos-latest'
-        run: |
-          xcode-select --install || true
-          brew install python@3 || true
-          npm install -g node-gyp
-
-      - name: Rebuild native modules (macOS only)
-        if: matrix.os == 'macos-latest'
-        run: |
-          npm rebuild tree-sitter --build-from-source
-
-      - name: Debug native build failure (macOS only)
-        if: failure() && matrix.os == 'macos-latest'
-        run: |
-          echo "tree-sitter build log:"
-          cat $(find . -name 'npm-debug.log' | head -n 1) || echo "No npm-debug.log found"
 
       - name: Build app
         run: |
