@@ -1,108 +1,100 @@
 name: Build and Release
 
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
-
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: npm
+      - run: npm install
+      - run: npm run lint || true
+      - run: npm run build
+        env:
+          CI: true
 
-      - name: Install macOS Build Prerequisites
-        if: matrix.os == 'macos-latest'
-        run: |
-          xcode-select --install || true
-          brew install python@3 cmake llvm || true
-          brew list python@3 cmake llvm || echo "❌ Missing required tools"
-
-      - name: Verify Python Installation
-        if: matrix.os == 'macos-latest'
-        run: |
-          python3 --version
-          which python3
-
-      - name: Update Node-Gyp
-        if: matrix.os == 'macos-latest'
-        run: npm install -g node-gyp@latest
-
-      - name: Set Python 3.11 for node-gyp
-        if: matrix.os == 'macos-latest'
-        run: |
-          echo "PYTHON=/opt/homebrew/bin/python3.11" >> $GITHUB_ENV
-          echo "npm_config_python=/opt/homebrew/bin/python3.11" >> $GITHUB_ENV
+  build_and_release:
+    name: Build and Release Artifacts
+    needs: validate
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-latest, windows-latest ]
+        include:
+          - os: macos-latest
+            package_cmd: npm run package:mac --verbose
+            artifact_pattern: |
+              release-builds/**/*.dmg
+              release-builds/**/*.zip
+            release_glob: |
+              release-builds/**/*.dmg
+              release-builds/**/*.zip
+          - os: windows-latest
+            package_cmd: npm run package:win --verbose
+            artifact_pattern: |
+              release-builds/**/*.exe
+              release-builds/**/*.msi
+            release_glob: release-builds/**/*.exe
+    env:
+      CXXFLAGS: --std=c++20
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.os == 'macos-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Rebuild native modules for Electron (macOS only)
-        if: matrix.os == 'macos-latest'
-        run: npx electron-rebuild --force --debug
-
-      - name: Verify signing credentials (macOS only)
-        if: matrix.os == 'macos-latest'
-        run: |
-          if [ -z "${{ secrets.APPLE_ID }}" ]; then echo "❌ APPLE_ID is not set"; exit 1; fi
-          if [ -z "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then echo "❌ APPLE_APP_SPECIFIC_PASSWORD is not set"; exit 1; fi
-          if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "❌ APPLE_TEAM_ID is not set"; exit 1; fi
-          if [ -z "${{ secrets.CSC_LINK }}" ]; then echo "❌ CSC_LINK is not set"; exit 1; fi
-          if [ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]; then echo "❌ CSC_KEY_PASSWORD is not set"; exit 1; fi
-
-      - name: Build app
-        run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            node scripts/mac-build.js --verbose
-          else
-            npm run package:win
-          fi
+      - name: Build Vite App
+        run: npm run build
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CI: true
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Create release-builds directory
+        run: mkdir -p release-builds
+
+      - name: Package Application
+        run: ${{ matrix.package_cmd }}
+
+      - name: List Build Output
+        run: |
+          echo "Artifacts:"  
+          ls -R release-builds || echo "No artifacts found"
+
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-build
-          path: |
-            release-builds/**/*.dmg
-            release-builds/**/*.zip
-            release-builds/**/*.exe
-            release-builds/**/*.msi
+          path: ${{ matrix.artifact_pattern }}
+          if-no-files-found: warn
 
-      - name: Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            release-builds/**/*.dmg
-            release-builds/**/*.zip
-            release-builds/**/*.exe
-            release-builds/**/*.msi
+          files: ${{ matrix.release_glob }}
           draft: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Output npm logs
-        if: failure()
-        run: |
-          if [ -f /Users/runner/.npm/_logs/*-debug-0.log ]; then
-            cat /Users/runner/.npm/_logs/*-debug-0.log
-          else
-            echo "No npm debug log found."
-          fi

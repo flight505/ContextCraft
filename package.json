@@ -40,8 +40,7 @@
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "install": "PYTHON=/opt/homebrew/bin/python3.11 npm_config_python=/opt/homebrew/bin/python3.11 npm install"
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "clipboard",
