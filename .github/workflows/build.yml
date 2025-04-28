@@ -12,6 +12,8 @@ jobs:
   validate:
     name: Validate Code
     runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_IGNORE_SCRIPTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
