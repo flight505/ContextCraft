@@ -1,4 +1,39 @@
-# ContextCraft v1.0.2
+# ContextCraft v1.0.20
+
+This release fixes module loading issues and improves build reliability.
+
+## What's New
+
+### Module Loading Improvements
+- Fixed "Could not load chokidar from any location" error
+- Properly classified chokidar as a development dependency
+- Implemented better error handling for minimatch and other modules
+- Added fallback implementations for critical modules when not available
+
+### Build System Enhancements
+- Updated rebuild-native-modules script to handle more modules
+- Added comprehensive module testing capabilities
+- Improved GitHub Actions workflow for better CI/CD compatibility
+- Updated to Node.js 20 for building
+
+### Development Experience
+- Added test-modules scripts to verify module loading
+- Enhanced error reporting and diagnostics
+- Simplified development vs. production environment handling
+
+### Stability Improvements
+- Added fallback implementations for file watching when chokidar is unavailable
+- Improved error handling throughout the application
+- Better logging for troubleshooting
+
+## Compatibility
+- Windows: Improved module loading reliability
+- macOS: Fixed signing and notarization process
+- Linux: Maintained compatibility
+
+This release focuses on stability and reliability, particularly for the build and packaging process.
+
+# ContextCraft v1.0.19
 
 This release includes important fixes for Windows compatibility and several UI improvements.
 
