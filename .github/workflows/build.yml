@@ -94,10 +94,15 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     env:
-      CXXFLAGS: --std=c++20
+      # Fix Windows C++20 flags - MSVC uses different syntax than GCC
+      CXX_FLAGS: "/std:c++20"
+      CXXFLAGS: "/std:c++20"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CSC_LINK: ${{ secrets.CSC_LINK }}
       CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      # Add explicit npm config for MSVC
+      npm_config_msvs_version: "2022"
+      npm_config_node_gyp_force_unsupported_msvs_version: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -107,6 +112,15 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Set up Visual Studio Command Line
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: 14.x
+
+      - name: Rebuild native modules with C++20
+        run: |
+          npm rebuild --build-from-source
 
       - name: Build Vite App
         run: npm run build

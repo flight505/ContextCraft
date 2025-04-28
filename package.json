@@ -221,6 +221,18 @@
     "tree-sitter": "^0.22.4",
     "tree-sitter-html": {
       "tree-sitter": "^0.22.4"
+    },
+    "tree-sitter-css": {
+      "tree-sitter": "^0.22.4"
+    },
+    "tree-sitter-javascript": {
+      "tree-sitter": "^0.22.4"
+    },
+    "tree-sitter-python": {
+      "tree-sitter": "^0.22.4"
+    },
+    "tree-sitter-typescript": {
+      "tree-sitter": "^0.22.4"
     }
   }
 }
