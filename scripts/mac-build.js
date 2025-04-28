@@ -12,6 +12,22 @@ const fs = require('fs');
 const path = require('path');
 const { createInterface } = require('readline');
 
+// Load environment variables from .env file for local builds only
+// This won't override existing env vars (like GitHub Actions secrets)
+const isCI = process.env.CI === 'true' || process.env.CI === true;
+if (!isCI) {
+  try {
+    const dotenv = require('dotenv');
+    const envPath = path.resolve(__dirname, '../.env');
+    if (fs.existsSync(envPath)) {
+      console.log('[mac-build.js] Loading environment variables from .env file for local build');
+      dotenv.config({ path: envPath });
+    }
+  } catch (err) {
+    console.warn('[mac-build.js] Warning: Failed to load .env file:', err.message);
+  }
+}
+
 const args = process.argv.slice(2);
 const skipSigning = args.includes('--skip-signing');
 const verbose = args.includes('--verbose');
@@ -214,7 +230,14 @@ async function buildMacApp() {
     // Execute the electron-builder command
     log(`Executing build command: ${buildCommand}`);
     log(`Using environment: CSC_IDENTITY_AUTO_DISCOVERY=${process.env.CSC_IDENTITY_AUTO_DISCOVERY}, DISABLE_NOTARIZATION=${process.env.DISABLE_NOTARIZATION}, CI=${process.env.CI}`);
-    const buildEnv = { ...process.env, npm_config_cxx_std: 'c++20', CXXFLAGS: '-std=c++20' };
+    const buildEnv = { 
+      ...process.env, 
+      npm_config_cxx_std: 'c++20', 
+      CXXFLAGS: '-std=c++20',
+      // Enable parallel code signing for faster builds
+      CSC_PARALLEL_SIGNING: 'true',
+      CSC_NUM_THREADS: '16'  // Adjust based on available CPU cores
+    };
     try {
       execSync(buildCommand, {
         stdio: 'inherit', // Show electron-builder output directly

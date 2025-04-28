@@ -26,30 +26,11 @@ jobs:
         env:
           CI: true
 
-  build_and_release:
-    name: Build and Release Artifacts
+  build_mac:
+    name: Build macOS
     needs: validate
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ macos-latest, windows-latest ]
-        include:
-          - os: macos-latest
-            package_cmd: npm run package:mac --verbose
-            artifact_pattern: |
-              release-builds/**/*.dmg
-              release-builds/**/*.zip
-            release_glob: |
-              release-builds/**/*.dmg
-              release-builds/**/*.zip
-          - os: windows-latest
-            package_cmd: npm run package:win --verbose
-            artifact_pattern: |
-              release-builds/**/*.exe
-              release-builds/**/*.msi
-            release_glob: release-builds/**/*.exe
+    runs-on: macos-latest
     env:
       CXXFLAGS: --std=c++20
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +39,9 @@ jobs:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.os == 'macos-latest' }}
+      CSC_IDENTITY_AUTO_DISCOVERY: true
+      CSC_PARALLEL_SIGNING: 'true'
+      CSC_NUM_THREADS: '4'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,7 +61,7 @@ jobs:
         run: mkdir -p release-builds
 
       - name: Package Application
-        run: ${{ matrix.package_cmd }}
+        run: npm run package:mac --verbose
 
       - name: List Build Output
         run: |
@@ -87,16 +70,82 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-build
-          path: ${{ matrix.artifact_pattern }}
+          name: macos-build
+          path: |
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
           if-no-files-found: warn
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ matrix.release_glob }}
+          files: |
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
           draft: false
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_windows:
+    name: Build Windows
+    needs: validate
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    env:
+      CXXFLAGS: --std=c++20
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Vite App
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Create release-builds directory
+        run: mkdir -Force release-builds
+        shell: pwsh
+
+      - name: Package Application
+        run: npm run package:win --verbose
+
+      - name: List Build Output
+        run: |
+          echo "Artifacts:"  
+          dir release-builds -Recurse || echo "No artifacts found"
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: release-builds/**/*.exe
+          if-no-files-found: warn
+
+      # For Windows, instead of creating separate releases, we'll upload to the same release
+      # that the macOS job creates, but we'll do it conditionally
+      - name: Wait for 30 seconds to ensure macOS job has created the release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: Start-Sleep -s 30
+        shell: pwsh
+        
+      - name: Upload Windows artifacts to existing release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-builds/**/*.exe
+          draft: false
+          # Don't generate notes again - the macOS job already did this
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
