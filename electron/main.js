@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, globalShortcut, shell } = require("
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const url = require("url");
 const minimatch = require("minimatch");
 const { promisify } = require("util");
 const micromatch = require('micromatch');
@@ -325,7 +326,11 @@ function createWindow() {
 
   // Load the app - fix path for production builds
   const startUrl = process.env.ELECTRON_START_URL || 
-    `file://${path.join(__dirname, "..", "dist", "index.html")}`;
+    url.format({
+      pathname: path.join(__dirname, '../dist/index.html'),
+      protocol: 'file:',
+      slashes: true
+    });
   
   console.log(`Loading app from: ${startUrl}`);
   mainWindow.loadURL(startUrl);
@@ -352,8 +357,12 @@ function createWindow() {
 
       if (process.env.ELECTRON_START_URL) {
         // Retry with explicit file URL
-        const indexPath = path.join(__dirname, "dist", "index.html");
-        const indexUrl = `file://${indexPath}`;
+        const indexUrl = url.format({
+          pathname: path.join(__dirname, '../dist/index.html'),
+          protocol: 'file:',
+          slashes: true
+        });
+        console.log(`Retrying with URL: ${indexUrl}`);
         mainWindow.loadURL(indexUrl);
       }
     },
