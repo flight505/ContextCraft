@@ -1,198 +1,108 @@
-name: Build and Release CI
+name: Build and Release
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  validate:
-    name: Validate Code
-    runs-on: ubuntu-latest
-    # Always run validation, regardless of trigger
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-        continue-on-error: false
-
-      - name: Lint code
-        run: npm run lint || true
-
-      - name: Build Vite app
-        run: npm run build
-        env:
-          CI: true
-
-  build_and_release:
-    name: Build for ${{ matrix.os }}
-    needs: validate
-    # Only run build job if it's a tag push or manually triggered
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        include:
-          - os: macos-latest
-            package_cmd: npm run package:mac --verbose
-            artifact_pattern: |
-              release-builds/**/*.dmg
-              release-builds/**/*.zip
-            release_glob: |
-              release-builds/**/*.dmg
-              release-builds/**/*.zip
-          - os: windows-latest
-            package_cmd: npm run package:win --verbose
-            artifact_pattern: |
-              release-builds/**/*.exe
-              release-builds/**/*.msi
-            release_glob: release-builds/**/*.exe
-          - os: ubuntu-latest
-            package_cmd: npm run package:linux --verbose
-            artifact_pattern: |
-              release-builds/**/*.AppImage
-              release-builds/**/*.deb
-              release-builds/**/*.rpm
-            release_glob: release-builds/**/*.AppImage
+        os: [macos-latest, windows-latest]
 
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
 
-      - name: Debug - Environment info
+      - name: Install macOS Build Prerequisites
+        if: matrix.os == 'macos-latest'
         run: |
-          echo "OS: ${{ runner.os }}"
-          echo "Node: $(node -v)"
-          echo "NPM: $(npm -v)"
-          echo "Working directory: $(pwd)"
-          echo "Repository: ${{ github.repository }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Event name: ${{ github.event_name }}"
-          echo "Is tag: ${{ startsWith(github.ref, 'refs/tags/') }}"
+          xcode-select --install || true
+          brew install python@3 cmake llvm || true
+          brew list python@3 cmake llvm || echo "❌ Missing required tools"
+
+      - name: Verify Python Installation
+        if: matrix.os == 'macos-latest'
+        run: |
+          python3 --version
+          which python3
+
+      - name: Update Node-Gyp
+        if: matrix.os == 'macos-latest'
+        run: npm install -g node-gyp@latest
+
+      - name: Set Python 3.11 for node-gyp
+        if: matrix.os == 'macos-latest'
+        run: |
+          echo "PYTHON=/opt/homebrew/bin/python3.11" >> $GITHUB_ENV
+          echo "npm_config_python=/opt/homebrew/bin/python3.11" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: npm install
-        continue-on-error: false
+        run: npm ci
 
-      - name: List installed packages
-        run: npm list --depth=0 || true
+      - name: Rebuild native modules for Electron (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: npx electron-rebuild --force --debug
 
-      - name: Build Vite app
-        run: npm run build
-        env:
-          CI: true
-
-      - name: Debug - Project structure before build (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
+      - name: Verify signing credentials (macOS only)
+        if: matrix.os == 'macos-latest'
         run: |
-          echo "Package.json contents (build section):"
-          Get-Content package.json | Select-String -Pattern '"build":' -SimpleMatch -Context 0,50
-          
-          echo "Project structure:"
-          Get-ChildItem -Recurse -Depth 2 | Where-Object { -not $_.FullName.Contains("node_modules") -and -not $_.FullName.Contains(".git") } | Select-Object FullName
+          if [ -z "${{ secrets.APPLE_ID }}" ]; then echo "❌ APPLE_ID is not set"; exit 1; fi
+          if [ -z "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then echo "❌ APPLE_APP_SPECIFIC_PASSWORD is not set"; exit 1; fi
+          if [ -z "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "❌ APPLE_TEAM_ID is not set"; exit 1; fi
+          if [ -z "${{ secrets.CSC_LINK }}" ]; then echo "❌ CSC_LINK is not set"; exit 1; fi
+          if [ -z "${{ secrets.CSC_KEY_PASSWORD }}" ]; then echo "❌ CSC_KEY_PASSWORD is not set"; exit 1; fi
 
-      - name: Debug - Project structure before build (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
+      - name: Build app
         run: |
-          echo "Package.json contents (build section):"
-          grep -A 50 '"build":' package.json
-          
-          echo "Project structure:"
-          find . -type d -not -path "*/node_modules/*" -not -path "*/.git/*" -maxdepth 3 | sort
-
-      - name: Create release-builds directory
-        run: mkdir -p release-builds
-        shell: bash
-
-      - name: Package Application
-        run: ${{ matrix.package_cmd }}
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            node scripts/mac-build.js --verbose
+          else
+            npm run package:win
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          NOTARIZE: false
-          DEBUG: electron-builder
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
-      - name: List Build Output (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "Listing output in release-builds..."
-          ls -lha release-builds/ || echo "release-builds directory not found or empty."
-          
-          echo "Listing dist directory..."
-          ls -lha dist/ || echo "dist directory not found or empty."
-          
-          echo "Finding specific files..."
-          find . -type f \( -name "ContextCraft*.dmg" -o -name "ContextCraft*.zip" -o -name "ContextCraft*.exe" -o -name "ContextCraft*.msi" -o -name "ContextCraft*.AppImage" -o -name "ContextCraft*.deb" -o -name "ContextCraft*.rpm" \) | grep -v "node_modules" || echo "No expected artifacts found."
-        shell: bash
-
-      - name: List Build Output (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          echo "Listing output in release-builds..."
-          if (Test-Path -Path release-builds) { 
-            Get-ChildItem -Path release-builds -Force -Recurse
-          } else { 
-            echo "release-builds directory not found or empty."
-          }
-          
-          echo "Listing dist directory..."
-          if (Test-Path -Path dist) { 
-            Get-ChildItem -Path dist -Force 
-          } else { 
-            echo "dist directory not found or empty."
-          }
-          
-          echo "Finding specific files..."
-          Get-ChildItem -Path . -Recurse -Include "ContextCraft*.dmg","ContextCraft*.zip","ContextCraft*.exe","ContextCraft*.msi","ContextCraft*.AppImage","ContextCraft*.deb","ContextCraft*.rpm" -ErrorAction SilentlyContinue
-
-      - name: Debug build output location
-        run: |
-          echo "Project root contents:"
-          ls -la
-          
-          echo "Looking for all build artifacts recursively:"
-          find . -type f \( -name "ContextCraft*.dmg" -o -name "ContextCraft*.zip" -o -name "ContextCraft*.exe" -o -name "ContextCraft*.AppImage" -o -name "ContextCraft*.deb" -o -name "ContextCraft*.rpm" \) | grep -v "node_modules" || echo "No expected artifacts found."
-        shell: bash
-
-      - name: Upload Build Artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-build
-          path: ${{ matrix.artifact_pattern }}
-          if-no-files-found: warn
+          path: |
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
+            release-builds/**/*.exe
+            release-builds/**/*.msi
 
-      - name: Create Release
+      - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ matrix.release_glob }}
-          fail_on_unmatched_files: false 
-          draft: true
+          files: |
+            release-builds/**/*.dmg
+            release-builds/**/*.zip
+            release-builds/**/*.exe
+            release-builds/**/*.msi
+          draft: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output npm logs
+        if: failure()
+        run: |
+          if [ -f /Users/runner/.npm/_logs/*-debug-0.log ]; then
+            cat /Users/runner/.npm/_logs/*-debug-0.log
+          else
+            echo "No npm debug log found."
+          fi
