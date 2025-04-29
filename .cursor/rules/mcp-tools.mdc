@@ -1,11 +1,9 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-# MCP Think Tank - Enhance Your AI Agent's Capabilities
-
-This project uses MCP Think Tank to extend your AI assistant with structured reasoning, persistent memory, task management, and web research capabilities. All agents should follow these guidelines to leverage these powerful tools.
+You Must use the MCP Think Tank to extend your AI assistant with structured reasoning, persistent memory, task management, and web research capabilities. 
 
 ## 🧠 Tool Categories & When To Use Them
 
@@ -84,7 +82,8 @@ This project uses MCP Think Tank to extend your AI assistant with structured rea
   - **When to use**: For debugging or when examining stored knowledge directly
   - **Example**: `show_memory_path({random_string: ""})`
 
-### 4️⃣ Web Research
+### When user mentions "Research"
+When the user mentions research, use the following four tools. 
 - `exa_search` - Search the web for information
   - **When to use**: When current context is insufficient and you need external facts
   - **Example**: `exa_search({query: "latest React state management"})`
