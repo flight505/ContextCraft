@@ -91,8 +91,19 @@ const tryLoadModule = (moduleName) => {
   throw new Error(`Could not load ${moduleName} from any location`);
 };
 
-// Show diagnostics to help debug module loading
+// Show diagnostics to help debug module loading issues
 showModuleLoadingDiagnostics();
+
+// Try to load commonly used modules
+try {
+  // Only try to load chokidar in development mode to avoid warning in production
+  if (!app.isPackaged) {
+    tryLoadModule('chokidar');
+  }
+} catch (err) {
+  // Ignore errors since the module might be intentionally excluded
+  console.log(`Note: Optional module loading skipped or failed: ${err.message}`);
+}
 
 // Safely require DOMPurify and JSDOM with fallbacks for production
 let createDOMPurify, JSDOM, DOMPurify;
@@ -718,7 +729,7 @@ app.whenReady().then(() => {
   try {
     // Try to load critical modules using our resilient method
     tryLoadModule('tree-sitter');
-    tryLoadModule('chokidar');
+    // tryLoadModule('chokidar'); // Removed - chokidar is handled conditionally during app init
     console.log('Critical native modules loaded successfully.');
     createWindow();
   } catch (moduleError) {

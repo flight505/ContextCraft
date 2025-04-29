@@ -302,6 +302,15 @@ async function buildMacApp() {
       .filter(file => file.endsWith('.app') && fs.statSync(path.join(releasePath, file)).isDirectory())
       .map(file => path.join(releasePath, file));
 
+    // Check the mac-arm64 subdirectory as well
+    const macArm64Path = path.join(releasePath, 'mac-arm64');
+    if (fs.existsSync(macArm64Path) && fs.statSync(macArm64Path).isDirectory()) {
+      const macArm64Bundles = fs.readdirSync(macArm64Path)
+        .filter(file => file.endsWith('.app') && fs.statSync(path.join(macArm64Path, file)).isDirectory())
+        .map(file => path.join(macArm64Path, file));
+      appBundles.push(...macArm64Bundles);
+    }
+
     if (appBundles.length === 0) {
       console.warn('⚠️ Warning: No .app bundles found in release directory!');
     } else {
