@@ -124,7 +124,7 @@ jobs:
 
       - name: Rebuild native modules with C++20
         run: |
-          npm rebuild --build-from-source
+          npm run rebuild-native-modules
 
       - name: Build Vite App
         run: npm run build:ci
