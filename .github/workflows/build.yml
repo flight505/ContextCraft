@@ -151,19 +151,17 @@ jobs:
         with:
           arch: x64 # Target x64 builds
 
-      - name: Configure npm for Windows Build (BEFORE Install)
-        # Set valid npm config keys. Avoid invalid ones.
+      - name: Configure Environment for Windows Build
         run: |
-          npm config set msvs_version 2022 --location=project
-          npm config set python "${{ env.PYTHON }}" --location=project
-          echo "---- Current npm config ----"
-          npm config list -l
-          echo "---- Env Vars for Build ----"
-          echo "PYTHON=${{ env.PYTHON }}"
-          echo "GYP_MSVS_VERSION=${{ env.GYP_MSVS_VERSION }}"
-          echo "CXXFLAGS=${{ env.CXXFLAGS }}"
-        shell: bash
-
+          echo "GYP_MSVS_VERSION=2022" >> $env:GITHUB_ENV
+          echo "PYTHON=${{ env.pythonLocation }}\\python.exe" >> $env:GITHUB_ENV
+          echo "CXXFLAGS=/std:c++20" >> $env:GITHUB_ENV
+          echo "---- Current Environment ----"
+          echo "GYP_MSVS_VERSION=2022"
+          echo "PYTHON=${{ env.pythonLocation }}\\python.exe"
+          echo "CXXFLAGS=/std:c++20"
+        shell: pwsh
+        
       - name: Install Dependencies (includes postinstall)
         # Pass necessary env vars explicitly to ensure they are available
         run: npm ci
