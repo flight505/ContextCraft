@@ -151,28 +151,40 @@ jobs:
         with:
           arch: x64 # Target x64 builds
 
-      - name: Configure Environment for Windows Build
+      - name: Configure npm for Windows Build (BEFORE Install)
+        # Set valid npm config keys. Avoid invalid ones.
         run: |
-          echo "GYP_MSVS_VERSION=2022" >> $env:GITHUB_ENV
-          echo "PYTHON=${{ env.pythonLocation }}\\python.exe" >> $env:GITHUB_ENV
-          echo "CXXFLAGS=/std:c++20" >> $env:GITHUB_ENV
-          echo "---- Current Environment ----"
-          echo "GYP_MSVS_VERSION=2022"
-          echo "PYTHON=${{ env.pythonLocation }}\\python.exe"
-          echo "CXXFLAGS=/std:c++20"
+          npm config set msvs_version 2022 --location=project
+          npm config set python "${{ env.PYTHON }}" --location=project
+          Write-Host "---- Current npm config ----"
+          npm config list -l
+          Write-Host "---- Env Vars for Build ----"
+          Write-Host "PYTHON=${{ env.PYTHON }}"
+          Write-Host "GYP_MSVS_VERSION=${{ env.GYP_MSVS_VERSION }}"
+          Write-Host "CXXFLAGS=${{ env.CXXFLAGS }}"
         shell: pwsh
-        
-      - name: Install Dependencies (includes postinstall)
-        # Pass necessary env vars explicitly to ensure they are available
-        run: npm ci
+
+      - name: Install Dependencies (without scripts)
+        # Skip postinstall scripts to avoid premature native module rebuilding
+        run: npm ci --ignore-scripts
         env:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
-          CXXFLAGS: ${{ env.CXXFLAGS }} # Pass CXXFLAGS here too
+          CXXFLAGS: ${{ env.CXXFLAGS }}
+
+      - name: Log Environment Variables before rebuild
+        run: |
+          echo "Node Version: $(node --version)"
+          echo "NPM Version: $(npm --version)"
+          echo "Python Path: $(where python)"
+          echo "Python Version: $(python --version)"
+          echo "CXXFLAGS: ${{ env.CXXFLAGS }}"
+          echo "GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}"
+          echo "Path: $env:Path"
+        shell: pwsh
 
       - name: Rebuild Native Modules for Electron
-        # Ensure rebuild script inherits the crucial env vars
-        # Your rebuild-native-modules.js MUST use @electron/rebuild
+        # Explicitly run the rebuild script after installation
         run: npm run rebuild-native-modules --verbose
         env:
           PYTHON: ${{ env.PYTHON }}
