@@ -26,9 +26,74 @@ jobs:
         env:
           CI: true
 
+  test_native_modules:
+    name: Test Native Modules
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+        node-version: [20]
+    env:
+      # Set correct C++20 flags for MSVC
+      CXX_FLAGS: "/std:c++20"
+      CXXFLAGS: "/std:c++20"
+      npm_config_msvs_version: "2022"
+      npm_config_node_gyp_force_unsupported_msvs_version: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Setup Visual Studio on Windows
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: 14.x
+      
+      - name: Verify binding.gyp files
+        run: node scripts/verify-cpp20-bindings.js --verbose
+        
+      - name: Patch binding.gyp files if needed
+        run: node scripts/verify-cpp20-bindings.js --patch --verbose
+      
+      - name: Test tree-sitter native module rebuild
+        run: |
+          echo "Testing tree-sitter rebuild with C++20..."
+          npm rebuild tree-sitter --verbose
+        
+      - name: Test other tree-sitter modules
+        run: |
+          echo "Testing other tree-sitter modules..."
+          npm rebuild tree-sitter-javascript tree-sitter-typescript tree-sitter-python tree-sitter-css tree-sitter-html --verbose
+      
+      - name: Capture node-gyp debug output
+        if: always()
+        run: |
+          echo "Node-gyp configuration:"
+          node -e "console.log('node-gyp version:', require('node-gyp/package.json').version)"
+          node -e "console.log('C++ flags:', process.env.CXXFLAGS, process.env.CXX_FLAGS)"
+          node -e "console.log('MSVC version:', process.env.npm_config_msvs_version)"
+        
+      - name: Upload binding.gyp files for analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: binding-gyp-files
+          path: |
+            node_modules/tree-sitter/binding.gyp
+            node_modules/tree-sitter*/binding.gyp
+          if-no-files-found: warn
+
   build_mac:
     name: Build macOS
-    needs: validate
+    needs: [validate, test_native_modules]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     env:
@@ -94,7 +159,7 @@ jobs:
 
   build_windows:
     name: Build Windows
-    needs: validate
+    needs: [validate, test_native_modules]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     env:
@@ -121,6 +186,9 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           toolset: 14.x
+
+      - name: Verify and patch binding.gyp files
+        run: node scripts/verify-cpp20-bindings.js --patch
 
       - name: Rebuild native modules with C++20
         run: |
