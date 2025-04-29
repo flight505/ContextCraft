@@ -1,3 +1,13 @@
+# Release Notes
+
+## v1.0.24 (2025-04-29)
+
+### Improvements
+- Fixed Windows build process to properly support C++20 for tree-sitter native modules
+- Streamlined GitHub Actions workflow with proper environment variable configuration
+- Enhanced native module rebuild process with direct MSBuild integration via Directory.Build.props
+- Simplified build scripts to reduce complexity and improve maintainability
+
 # ContextCraft v1.0.21
 
 This release fixes a critical bug with duplicate module declarations.
