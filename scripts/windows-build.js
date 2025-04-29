@@ -19,9 +19,12 @@ async function main() {
     
     // We're using the workflow env vars directly, without overriding them
     
+    // Path to electron-builder binary
+    const electronBuilderPath = path.join(process.cwd(), 'node_modules', '.bin', 'electron-builder');
+    
     // Run the build command with workflow-provided environment
     console.log('📦 Packaging Windows app with electron-builder...');
-    execSync('electron-builder --win --publish=never', { 
+    execSync(`"${electronBuilderPath}" --win --publish=never`, { 
       stdio: 'inherit',
       // Use process.env directly - environment variables from the workflow
     });
