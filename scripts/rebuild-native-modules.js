@@ -250,7 +250,14 @@ async function main() {
         ...env,
         npm_config_cxx_std: config.cxxStandard,
         npm_config_msvs_version: config.visualStudioVersion,
-        npm_config_platform: 'win32'
+        npm_config_platform: 'win32',
+        // Add explicit C++ flags for MSVC which requires different format
+        CXXFLAGS: "/std:c++20",
+        CXX_FLAGS: "/std:c++20",
+        npm_config_clang: "0",
+        // Force C++20 support
+        npm_config_msbuild_path: process.env.npm_config_msbuild_path || "",
+        npm_config_node_gyp_force_unsupported_msvs_version: "true"
       };
       
       if (config.nodeGypPath) {
