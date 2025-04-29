@@ -6613,142 +6613,6 @@ File: vite.config.ts
 42: });
 
 ================
-File: .cursor/rules/mcp-tools.mdc
-================
-  1: ---
-  2: description: 
-  3: globs: 
-  4: alwaysApply: false
-  5: ---
-  6: # MCP Think Tank - Enhance Your AI Agent's Capabilities
-  7: 
-  8: This project uses MCP Think Tank to extend your AI assistant with structured reasoning, persistent memory, task management, and web research capabilities. All agents should follow these guidelines to leverage these powerful tools.
-  9: 
- 10: ## 🧠 Tool Categories & When To Use Them
- 11: 
- 12: ### 1️⃣ Thinking Tools
- 13: - `think` - Use for complex reasoning, architecture planning, and step-by-step problem-solving
- 14:   - **When to use**: For important decisions requiring structured analysis or reflection
- 15:   - **Pro tip**: Add `storeInMemory: true` to save important thoughts in the knowledge graph
- 16:   - **Example**: `think({structuredReasoning: "Analyzing pros/cons of database options...", storeInMemory: true})`
- 17: 
- 18: ### 2️⃣ Memory & Knowledge Graph
- 19: - `create_entities` - Add new concepts to the knowledge graph
- 20:   - **When to use**: To document important concepts, systems, or components
- 21:   - **Example**: `create_entities([{name: "AuthSystem", entityType: "System", observations: ["Uses JWT"]}])`
- 22: 
- 23: - `add_observations` - Add facts to existing entities
- 24:   - **When to use**: When new information about an existing entity is discovered
- 25:   - **Example**: `add_observations([{entityName: "AuthSystem", contents: ["Expires tokens after 24h"]}])`
- 26: 
- 27: - `create_relations` - Create relationships between entities
- 28:   - **When to use**: To connect related concepts in the knowledge graph
- 29:   - **Example**: `create_relations([{from: "AuthSystem", to: "Security", relationType: "enhances"}])`
- 30: 
- 31: - `read_graph` - Get the entire knowledge graph
- 32:   - **When to use**: To understand the full project context before making major decisions
- 33: 
- 34: - `search_nodes` - Find entities matching search criteria
- 35:   - **When to use**: To retrieve relevant knowledge before solving a problem
- 36:   - **Example**: `search_nodes({query: "authentication"})`
- 37: 
- 38: - `open_nodes` - Retrieve specific entities by name
- 39:   - **When to use**: When you need details about a specific known entity
- 40:   - **Example**: `open_nodes({names: ["AuthSystem"]})`
- 41: 
- 42: - `update_entities` - Modify existing entities
- 43:   - **When to use**: When core information about an entity changes
- 44:   - **Example**: `update_entities([{name: "AuthSystem", entityType: "Security"}])`
- 45: 
- 46: - `update_relations` - Modify relationships between entities
- 47:   - **When to use**: When the nature of a relationship changes
- 48:   - **Example**: `update_relations([{from: "AuthSystem", to: "Security", relationType: "implements"}])`
- 49: 
- 50: - `delete_entities` - Remove entities from the knowledge graph
- 51:   - **When to use**: When concepts become obsolete or are merged
- 52:   - **Example**: `delete_entities({entityNames: ["OldSystem"]})`
- 53: 
- 54: - `delete_observations` - Remove specific facts from entities
- 55:   - **When to use**: When information becomes outdated or incorrect
- 56:   - **Example**: `delete_observations([{entityName: "AuthSystem", observations: ["Uses MD5"]}])`
- 57: 
- 58: - `delete_relations` - Remove relationships between entities
- 59:   - **When to use**: When connections are no longer valid
- 60:   - **Example**: `delete_relations([{from: "AuthSystem", to: "Legacy", relationType: "depends on"}])`
- 61: 
- 62: ### 3️⃣ Task Management
- 63: - `plan_tasks` - Create and organize project tasks
- 64:   - **When to use**: At project start or when planning new features
- 65:   - **Example**: `plan_tasks([{description: "Implement login", priority: "high"}])`
- 66: 
- 67: - `list_tasks` - Retrieve tasks filtered by status/priority
- 68:   - **When to use**: To understand current work status
- 69:   - **Example**: `list_tasks({status: "todo"})`
- 70: 
- 71: - `next_task` - Get and start the highest priority task
- 72:   - **When to use**: When ready to work on the next priority
- 73:   - **Example**: `next_task({random_string: ""})`
- 74: 
- 75: - `complete_task` - Mark tasks as done
- 76:   - **When to use**: When a task is finished
- 77:   - **Example**: `complete_task({id: "task-uuid"})`
- 78: 
- 79: - `update_tasks` - Modify existing tasks
- 80:   - **When to use**: When priorities change or task details need updating
- 81:   - **Example**: `update_tasks([{id: "task-uuid", priority: "high"}])`
- 82: 
- 83: - `show_memory_path` - Get the location of the knowledge graph file
- 84:   - **When to use**: For debugging or when examining stored knowledge directly
- 85:   - **Example**: `show_memory_path({random_string: ""})`
- 86: 
- 87: ### 4️⃣ Web Research
- 88: - `exa_search` - Search the web for information
- 89:   - **When to use**: When current context is insufficient and you need external facts
- 90:   - **Example**: `exa_search({query: "latest React state management"})`
- 91: 
- 92: - `exa_answer` - Get sourced answers to specific questions
- 93:   - **When to use**: For factual questions requiring cited sources
- 94:   - **Example**: `exa_answer({question: "What is quantum computing?"})`
- 95: 
- 96: - `resolve-library-id` -  to retrieve a valid Context7-compatible library ID.
- 97: Parameters: libraryName: Library name to search for and retrieve a Context-compatible library ID.
- 98: 
- 99: - `get-library-docs` - Fetches up-to-date documentation for a library. You must call 'resolve-library-id' first to obtain the
-100: exact Context/-compatible library ID required to use this tool.
-101: Parameters:
-102: • context7CompatibleLibraryID: Exact Context7-compatible library ID (e.g., 'mongodb/docs',
-103: 'vercel/nextjs') retrieved from 'resolve-library-id'.
-104: • topic: Topic to focus documentation on (e.g., 'hooks', 'routing").
-105: 
-106: ## 📋 Best Practices
-107: 
-108: ### Thinking Process
-109: - Use the `think` tool for all complex decisions to ensure thorough analysis
-110: - Structure your reasoning with clear problem definition, context, analysis, and conclusion
-111: - Set `storeInMemory: true` for important decisions that should be accessible later
-112: 
-113: ### Knowledge Management
-114: - Before creating new entities, search the graph for related concepts
-115: - Create a clear entity type hierarchy and consistent naming
-116: - Link related entities to build a comprehensive knowledge web
-117: - Regularly update entities with new observations as the project evolves
-118: 
-119: ### Task Workflow
-120: 1. Use `plan_tasks` to break down features into clear steps
-121: 2. Use `list_tasks` to review current priorities
-122: 3. Use `next_task` to identify what to work on next
-123: 4. Use `complete_task` when finished with an item
-124: 5. Use `update_tasks` to adjust priorities as needs change
-125: 
-126: ### Research Protocol
-127: - Always cite sources when using web research tools
-128: - Save important findings to the knowledge graph
-129: - Combine research with structured thinking for best results
-130: 
-131: ## 📝 How To Save Important Thoughts
-132: When using the `think` tool with important reasoning, set `storeInMemory: true` or simply tell the agent "Please save this reasoning in memory for future reference."
-
-================
 File: config/native-modules.json
 ================
  1: {
@@ -13440,6 +13304,139 @@ File: .gitignore
 80: memory.jsonl
 
 ================
+File: .cursor/rules/mcp-tools.mdc
+================
+  1: ---
+  2: description: 
+  3: globs: 
+  4: alwaysApply: true
+  5: ---
+  6: You Must use the MCP Think Tank to extend your AI assistant with structured reasoning, persistent memory, task management, and web research capabilities. 
+  7: 
+  8: ### 1. Thinking Tools
+  9: - `think` - Use for complex reasoning, architecture planning, and step-by-step problem-solving
+ 10:   - **When to use**: For important decisions requiring structured analysis or reflection
+ 11:   - **Pro tip**: Add `storeInMemory: true` to save important thoughts in the knowledge graph
+ 12:   - **Example**: `think({structuredReasoning: "Analyzing pros/cons of database options...", storeInMemory: true})`
+ 13: 
+ 14: ### 2. Memory & Knowledge Graph
+ 15: - `create_entities` - Add new concepts to the knowledge graph
+ 16:   - **When to use**: To document important concepts, systems, or components
+ 17:   - **Example**: `create_entities([{name: "AuthSystem", entityType: "System", observations: ["Uses JWT"]}])`
+ 18: 
+ 19: - `add_observations` - Add facts to existing entities
+ 20:   - **When to use**: When new information about an existing entity is discovered
+ 21:   - **Example**: `add_observations([{entityName: "AuthSystem", contents: ["Expires tokens after 24h"]}])`
+ 22: 
+ 23: - `create_relations` - Create relationships between entities
+ 24:   - **When to use**: To connect related concepts in the knowledge graph
+ 25:   - **Example**: `create_relations([{from: "AuthSystem", to: "Security", relationType: "enhances"}])`
+ 26: 
+ 27: - `read_graph` - Get the entire knowledge graph
+ 28:   - **When to use**: To understand the full project context before making major decisions
+ 29: 
+ 30: - `search_nodes` - Find entities matching search criteria
+ 31:   - **When to use**: To retrieve relevant knowledge before solving a problem
+ 32:   - **Example**: `search_nodes({query: "authentication"})`
+ 33: 
+ 34: - `open_nodes` - Retrieve specific entities by name
+ 35:   - **When to use**: When you need details about a specific known entity
+ 36:   - **Example**: `open_nodes({names: ["AuthSystem"]})`
+ 37: 
+ 38: - `update_entities` - Modify existing entities
+ 39:   - **When to use**: When core information about an entity changes
+ 40:   - **Example**: `update_entities([{name: "AuthSystem", entityType: "Security"}])`
+ 41: 
+ 42: - `update_relations` - Modify relationships between entities
+ 43:   - **When to use**: When the nature of a relationship changes
+ 44:   - **Example**: `update_relations([{from: "AuthSystem", to: "Security", relationType: "implements"}])`
+ 45: 
+ 46: - `delete_entities` - Remove entities from the knowledge graph
+ 47:   - **When to use**: When concepts become obsolete or are merged
+ 48:   - **Example**: `delete_entities({entityNames: ["OldSystem"]})`
+ 49: 
+ 50: - `delete_observations` - Remove specific facts from entities
+ 51:   - **When to use**: When information becomes outdated or incorrect
+ 52:   - **Example**: `delete_observations([{entityName: "AuthSystem", observations: ["Uses MD5"]}])`
+ 53: 
+ 54: - `delete_relations` - Remove relationships between entities
+ 55:   - **When to use**: When connections are no longer valid
+ 56:   - **Example**: `delete_relations([{from: "AuthSystem", to: "Legacy", relationType: "depends on"}])`
+ 57: 
+ 58: ### 3. Task Management
+ 59: - `plan_tasks` - Create and organize project tasks
+ 60:   - **When to use**: At project start or when planning new features
+ 61:   - **Example**: `plan_tasks([{description: "Implement login", priority: "high"}])`
+ 62: 
+ 63: - `list_tasks` - Retrieve tasks filtered by status/priority
+ 64:   - **When to use**: To understand current work status
+ 65:   - **Example**: `list_tasks({status: "todo"})`
+ 66: 
+ 67: - `next_task` - Get and start the highest priority task
+ 68:   - **When to use**: When ready to work on the next priority
+ 69:   - **Example**: `next_task({random_string: ""})`
+ 70: 
+ 71: - `complete_task` - Mark tasks as done
+ 72:   - **When to use**: When a task is finished
+ 73:   - **Example**: `complete_task({id: "task-uuid"})`
+ 74: 
+ 75: - `update_tasks` - Modify existing tasks
+ 76:   - **When to use**: When priorities change or task details need updating
+ 77:   - **Example**: `update_tasks([{id: "task-uuid", priority: "high"}])`
+ 78: 
+ 79: - `show_memory_path` - Get the location of the knowledge graph file
+ 80:   - **When to use**: For debugging or when examining stored knowledge directly
+ 81:   - **Example**: `show_memory_path({random_string: ""})`
+ 82: 
+ 83: ### 4. When user mentions "Research"
+ 84: When the user mentions research, use the following four tools. 
+ 85: - `exa_search` - Search the web for information
+ 86:   - **When to use**: When current context is insufficient and you need external facts
+ 87:   - **Example**: `exa_search({query: "latest React state management"})`
+ 88: 
+ 89: - `exa_answer` - Get sourced answers to specific questions
+ 90:   - **When to use**: For factual questions requiring cited sources
+ 91:   - **Example**: `exa_answer({question: "What is quantum computing?"})`
+ 92: 
+ 93: - `resolve-library-id` -  to retrieve a valid Context7-compatible library ID.
+ 94: Parameters: libraryName: Library name to search for and retrieve a Context-compatible library ID.
+ 95: 
+ 96: - `get-library-docs` - Fetches up-to-date documentation for a library. You must call 'resolve-library-id' first to obtain the
+ 97: exact Context/-compatible library ID required to use this tool.
+ 98: Parameters:
+ 99: • context7CompatibleLibraryID: Exact Context7-compatible library ID (e.g., 'mongodb/docs',
+100: 'vercel/nextjs') retrieved from 'resolve-library-id'.
+101: • topic: Topic to focus documentation on (e.g., 'hooks', 'routing").
+102: 
+103: ## Best Practices
+104: 
+105: ### Thinking Process
+106: - Use the `think` tool for all complex decisions to ensure thorough analysis
+107: - Structure your reasoning with clear problem definition, context, analysis, and conclusion
+108: - Set `storeInMemory: true` for important decisions that should be accessible later
+109: 
+110: ### Knowledge Management
+111: - Before creating new entities, search the graph for related concepts
+112: - Create a clear entity type hierarchy and consistent naming
+113: - Link related entities to build a comprehensive knowledge web
+114: - Regularly update entities with new observations as the project evolves
+115: 
+116: ### Task Workflow
+117: 1. Use `plan_tasks` to break down features into clear steps
+118: 2. Use `list_tasks` to review current priorities
+119: 3. Use `next_task` to identify what to work on next
+120: 4. Use `complete_task` when finished with an item
+121: 5. Use `update_tasks` to adjust priorities as needs change
+122: 
+123: ### Research Protocol
+124: - Always cite sources when using web research tools
+125: - Save important findings to the knowledge graph
+126: - Combine research with structured thinking for best results
+127: 
+128: ## How To Save Important Thoughts
+129: When using the `think` tool with important reasoning, set `storeInMemory: true` or simply tell the agent "Please save this reasoning in memory for future reference."
+
+================
 File: src/components/IgnorePatterns.tsx
 ================
   1: import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -14307,113 +14304,6 @@ File: src/components/IgnorePatterns.tsx
 863:   );
 864: };
 865: export default IgnorePatternsWithErrorBoundary;
-
-================
-File: release_notes.md
-================
-  1: # ContextCraft v1.0.21
-  2: 
-  3: This release fixes a critical bug with duplicate module declarations.
-  4: 
-  5: ## What's New
-  6: 
-  7: ### Bug Fixes
-  8: - Fixed "Identifier 'minimatch' has already been declared" error that was causing application crashes
-  9: - Consolidated module loading to prevent duplicate declarations
- 10: - Improved module importing resilience
- 11: 
- 12: ### Technical Details
- 13: - Removed duplicate minimatch variable declarations in main.js
- 14: - Enhanced error handling for module loading
- 15: - Ensured consistent module loading across environments
- 16: 
- 17: ## Compatibility
- 18: - Windows: Fixed critical crash issue
- 19: - macOS: Fixed critical crash issue
- 20: - Linux: Fixed critical crash issue
- 21: 
- 22: This release is strongly recommended for all users as it fixes a crash on application startup.
- 23: 
- 24: # ContextCraft v1.0.20
- 25: 
- 26: This release fixes module loading issues and improves build reliability.
- 27: 
- 28: ## What's New
- 29: 
- 30: ### Module Loading Improvements
- 31: - Fixed "Could not load chokidar from any location" error
- 32: - Properly classified chokidar as a development dependency
- 33: - Implemented better error handling for minimatch and other modules
- 34: - Added fallback implementations for critical modules when not available
- 35: 
- 36: ### Build System Enhancements
- 37: - Updated rebuild-native-modules script to handle more modules
- 38: - Added comprehensive module testing capabilities
- 39: - Improved GitHub Actions workflow for better CI/CD compatibility
- 40: - Updated to Node.js 20 for building
- 41: 
- 42: ### Development Experience
- 43: - Added test-modules scripts to verify module loading
- 44: - Enhanced error reporting and diagnostics
- 45: - Simplified development vs. production environment handling
- 46: 
- 47: ### Stability Improvements
- 48: - Added fallback implementations for file watching when chokidar is unavailable
- 49: - Improved error handling throughout the application
- 50: - Better logging for troubleshooting
- 51: 
- 52: ## Compatibility
- 53: - Windows: Improved module loading reliability
- 54: - macOS: Fixed signing and notarization process
- 55: - Linux: Maintained compatibility
- 56: 
- 57: This release focuses on stability and reliability, particularly for the build and packaging process.
- 58: 
- 59: # ContextCraft v1.0.19
- 60: 
- 61: This release includes important fixes for Windows compatibility and several UI improvements.
- 62: 
- 63: ## What's New
- 64: 
- 65: ### Windows Build Fix
- 66: - Fixed port mismatch issue in development mode
- 67: - Electron application now correctly connects to Vite on port 5173 instead of 3000
- 68: - Added cross-env package for cross-platform environment variables
- 69: - Improved handling of ELECTRON_START_URL environment variable
- 70: 
- 71: ### Path Handling Improvements
- 72: - Fixed file tree display issues on Windows
- 73: - Implemented proper handling of Windows paths and drive letters
- 74: - Added relativePath property to file objects for consistent cross-platform path handling
- 75: - Modified file tree building to use pre-calculated relative paths
- 76: - Ensured compatibility with existing code through fallback mechanisms
- 77: 
- 78: ### File Selection & Copy Fix
- 79: - Fixed issues with file selection and content copying on Windows
- 80: - Ensured consistent mapping between displayed paths and actual file paths
- 81: - Improved path normalization across the application
- 82: 
- 83: ### File Exclusion Improvements
- 84: - Modified filter functions to consistently filter out excluded files
- 85: - Ensured synchronization between file tree and file cards
- 86: - Prevented excluded files from appearing in search results
- 87: 
- 88: ### UI Improvements
- 89: - Reduced excessive toast notifications
- 90: - Added comprehensive wiki documentation
- 91: - Improved AI interaction prompts
- 92: 
- 93: ### Performance Considerations
- 94: - Maintained efficient debouncing (200ms)
- 95: - Optimized dependency arrays in React components
- 96: - Implemented safety mechanisms to prevent UI hanging
- 97: 
- 98: ## Compatibility
- 99: - Windows: Fixed major compatibility issues
-100: - macOS: Maintained existing functionality 
-101: - Linux: Improvements should apply equally
-102: 
-103: This release significantly improves the Windows experience while maintaining compatibility with macOS and Linux.
 
 ================
 File: src/App.tsx
@@ -16025,6 +15915,123 @@ File: src/App.tsx
 1605:   );
 1606: };
 1607: export default App;
+
+================
+File: release_notes.md
+================
+  1: # Release Notes
+  2: 
+  3: ## v1.0.24 (2025-04-29)
+  4: 
+  5: ### Improvements
+  6: - Fixed Windows build process to properly support C++20 for tree-sitter native modules
+  7: - Streamlined GitHub Actions workflow with proper environment variable configuration
+  8: - Enhanced native module rebuild process with direct MSBuild integration via Directory.Build.props
+  9: - Simplified build scripts to reduce complexity and improve maintainability
+ 10: 
+ 11: # ContextCraft v1.0.21
+ 12: 
+ 13: This release fixes a critical bug with duplicate module declarations.
+ 14: 
+ 15: ## What's New
+ 16: 
+ 17: ### Bug Fixes
+ 18: - Fixed "Identifier 'minimatch' has already been declared" error that was causing application crashes
+ 19: - Consolidated module loading to prevent duplicate declarations
+ 20: - Improved module importing resilience
+ 21: 
+ 22: ### Technical Details
+ 23: - Removed duplicate minimatch variable declarations in main.js
+ 24: - Enhanced error handling for module loading
+ 25: - Ensured consistent module loading across environments
+ 26: 
+ 27: ## Compatibility
+ 28: - Windows: Fixed critical crash issue
+ 29: - macOS: Fixed critical crash issue
+ 30: - Linux: Fixed critical crash issue
+ 31: 
+ 32: This release is strongly recommended for all users as it fixes a crash on application startup.
+ 33: 
+ 34: # ContextCraft v1.0.20
+ 35: 
+ 36: This release fixes module loading issues and improves build reliability.
+ 37: 
+ 38: ## What's New
+ 39: 
+ 40: ### Module Loading Improvements
+ 41: - Fixed "Could not load chokidar from any location" error
+ 42: - Properly classified chokidar as a development dependency
+ 43: - Implemented better error handling for minimatch and other modules
+ 44: - Added fallback implementations for critical modules when not available
+ 45: 
+ 46: ### Build System Enhancements
+ 47: - Updated rebuild-native-modules script to handle more modules
+ 48: - Added comprehensive module testing capabilities
+ 49: - Improved GitHub Actions workflow for better CI/CD compatibility
+ 50: - Updated to Node.js 20 for building
+ 51: 
+ 52: ### Development Experience
+ 53: - Added test-modules scripts to verify module loading
+ 54: - Enhanced error reporting and diagnostics
+ 55: - Simplified development vs. production environment handling
+ 56: 
+ 57: ### Stability Improvements
+ 58: - Added fallback implementations for file watching when chokidar is unavailable
+ 59: - Improved error handling throughout the application
+ 60: - Better logging for troubleshooting
+ 61: 
+ 62: ## Compatibility
+ 63: - Windows: Improved module loading reliability
+ 64: - macOS: Fixed signing and notarization process
+ 65: - Linux: Maintained compatibility
+ 66: 
+ 67: This release focuses on stability and reliability, particularly for the build and packaging process.
+ 68: 
+ 69: # ContextCraft v1.0.19
+ 70: 
+ 71: This release includes important fixes for Windows compatibility and several UI improvements.
+ 72: 
+ 73: ## What's New
+ 74: 
+ 75: ### Windows Build Fix
+ 76: - Fixed port mismatch issue in development mode
+ 77: - Electron application now correctly connects to Vite on port 5173 instead of 3000
+ 78: - Added cross-env package for cross-platform environment variables
+ 79: - Improved handling of ELECTRON_START_URL environment variable
+ 80: 
+ 81: ### Path Handling Improvements
+ 82: - Fixed file tree display issues on Windows
+ 83: - Implemented proper handling of Windows paths and drive letters
+ 84: - Added relativePath property to file objects for consistent cross-platform path handling
+ 85: - Modified file tree building to use pre-calculated relative paths
+ 86: - Ensured compatibility with existing code through fallback mechanisms
+ 87: 
+ 88: ### File Selection & Copy Fix
+ 89: - Fixed issues with file selection and content copying on Windows
+ 90: - Ensured consistent mapping between displayed paths and actual file paths
+ 91: - Improved path normalization across the application
+ 92: 
+ 93: ### File Exclusion Improvements
+ 94: - Modified filter functions to consistently filter out excluded files
+ 95: - Ensured synchronization between file tree and file cards
+ 96: - Prevented excluded files from appearing in search results
+ 97: 
+ 98: ### UI Improvements
+ 99: - Reduced excessive toast notifications
+100: - Added comprehensive wiki documentation
+101: - Improved AI interaction prompts
+102: 
+103: ### Performance Considerations
+104: - Maintained efficient debouncing (200ms)
+105: - Optimized dependency arrays in React components
+106: - Implemented safety mechanisms to prevent UI hanging
+107: 
+108: ## Compatibility
+109: - Windows: Fixed major compatibility issues
+110: - macOS: Maintained existing functionality 
+111: - Linux: Improvements should apply equally
+112: 
+113: This release significantly improves the Windows experience while maintaining compatibility with macOS and Linux.
 
 ================
 File: electron/main.js
@@ -18576,7 +18583,7 @@ File: package.json
 ================
   1: {
   2:   "name": "contextcraft",
-  3:   "version": "1.0.22",
+  3:   "version": "1.0.24",
   4:   "main": "electron/main.js",
   5:   "scripts": {
   6:     "start": "electron .",
@@ -18617,221 +18624,220 @@ File: package.json
  41:     "release": "npm run cleanup && node scripts/fix-module-deps.js && vite build && electron-builder --publish=onTagOrDraft",
  42:     "postinstall": "electron-builder install-app-deps",
  43:     "rebuild-native-modules": "node scripts/rebuild-native-modules.js",
- 44:     "fix-tree-sitter": "node scripts/fix-tree-sitter.js",
- 45:     "fix-module-deps": "node scripts/fix-module-deps.js",
- 46:     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
- 47:     "lint:strict": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
- 48:     "preview": "vite preview",
- 49:     "test": "jest",
- 50:     "test:watch": "jest --watch",
- 51:     "test:coverage": "jest --coverage"
- 52:   },
- 53:   "keywords": [
- 54:     "clipboard",
- 55:     "code",
- 56:     "developer-tools",
- 57:     "electron",
- 58:     "file-viewer"
- 59:   ],
- 60:   "author": {
- 61:     "name": "flight505",
- 62:     "email": "jesper_vang@me.com"
- 63:   },
- 64:   "license": "MIT",
- 65:   "description": "A modern file viewer application for developers to easily navigate, search, and copy code from repositories.",
- 66:   "build": {
- 67:     "appId": "com.contextcraft.app",
- 68:     "productName": "ContextCraft",
- 69:     "directories": {
- 70:       "output": "release-builds",
- 71:       "buildResources": "build"
- 72:     },
- 73:     "files": [
- 74:       "dist/**/*",
- 75:       "electron/**/*",
- 76:       "!node_modules/**",
- 77:       "package.json"
- 78:     ],
- 79:     "extraResources": [
- 80:       {
- 81:         "from": "node_modules",
- 82:         "to": "node_modules",
- 83:         "filter": [
- 84:           "minimatch/**",
- 85:           "brace-expansion/**",
- 86:           "balanced-match/**",
- 87:           "ignore/**",
- 88:           "micromatch/**",
- 89:           "braces/**",
- 90:           "fill-range/**",
- 91:           "to-regex-range/**",
- 92:           "is-number/**",
- 93:           "picomatch/**",
- 94:           "readdirp/**",
- 95:           "tree-sitter/**/*",
- 96:           "tree-sitter-javascript/**/*",
- 97:           "tree-sitter-typescript/**/*",
- 98:           "tree-sitter-python/**/*",
- 99:           "tree-sitter-css/**/*",
-100:           "tree-sitter-html/**/*",
-101:           "jsdom/**",
-102:           "dompurify/**",
-103:           "tiktoken/**",
-104:           "gpt-3-encoder/**",
-105:           "node-gyp-build/**"
-106:         ]
-107:       }
-108:     ],
-109:     "afterSign": "scripts/notarize.js",
-110:     "mac": {
-111:       "category": "public.app-category.developer-tools",
-112:       "icon": "public/favicon.icns",
-113:       "target": [
-114:         "dmg",
-115:         "zip"
-116:       ],
-117:       "hardenedRuntime": true,
-118:       "gatekeeperAssess": false,
-119:       "entitlements": "build/entitlements.mac.plist",
-120:       "entitlementsInherit": "build/entitlements.mac.plist"
-121:     },
-122:     "win": {
-123:       "target": [
-124:         {
-125:           "target": "nsis",
-126:           "arch": [
-127:             "x64"
-128:           ]
-129:         },
-130:         {
-131:           "target": "portable",
-132:           "arch": [
-133:             "x64"
-134:           ]
-135:         }
-136:       ],
-137:       "icon": "public/favicon.ico",
-138:       "artifactName": "ContextCraft-${version}-${arch}-${name}.${ext}"
-139:     },
-140:     "nsis": {
-141:       "oneClick": true,
-142:       "perMachine": false,
-143:       "allowToChangeInstallationDirectory": false,
-144:       "deleteAppDataOnUninstall": true,
-145:       "artifactName": "ContextCraft-${version}-${arch}-setup.${ext}"
-146:     },
-147:     "portable": {
-148:       "artifactName": "ContextCraft-${version}-${arch}-portable.${ext}"
-149:     },
-150:     "linux": {
-151:       "target": [
-152:         "AppImage",
-153:         "deb",
-154:         "rpm"
-155:       ],
-156:       "category": "Development",
-157:       "icon": "public/favicon.png"
-158:     },
-159:     "asar": true,
-160:     "asarUnpack": [
-161:       "node_modules/tree-sitter/**/*",
-162:       "node_modules/tree-sitter-javascript/**/*",
-163:       "node_modules/tree-sitter-typescript/**/*",
-164:       "node_modules/tree-sitter-python/**/*",
-165:       "node_modules/tree-sitter-css/**/*",
-166:       "node_modules/tree-sitter-html/**/*",
-167:       "node_modules/tiktoken/**/*",
-168:       "node_modules/jsdom/**/*",
-169:       "node_modules/readdirp/**/*",
-170:       "node_modules/node-gyp-build/**/*",
-171:       "node_modules/nan/**/*"
-172:     ],
-173:     "publish": {
-174:       "provider": "github",
-175:       "releaseType": "draft"
-176:     }
-177:   },
-178:   "devDependencies": {
-179:     "@electron/notarize": "^3.0.1",
-180:     "@electron/rebuild": "^3.7.1",
-181:     "@testing-library/jest-dom": "^6.6.3",
-182:     "@testing-library/react": "^16.2.0",
-183:     "@types/css-modules": "^1.0.5",
-184:     "@types/electron": "^1.4.38",
-185:     "@types/jest": "^29.5.14",
-186:     "@types/jsdom": "^21.1.7",
-187:     "@types/node": "^20.10.5",
-188:     "@types/prismjs": "^1.26.5",
-189:     "@types/react": "^18.2.43",
-190:     "@types/react-dom": "^18.2.17",
-191:     "@typescript-eslint/eslint-plugin": "^6.14.0",
-192:     "@typescript-eslint/parser": "^6.14.0",
-193:     "@vitejs/plugin-react": "^4.2.1",
-194:     "chokidar": "^3.5.3",
-195:     "cross-env": "^7.0.3",
-196:     "dotenv": "^16.5.0",
-197:     "electron": "^34.3.0",
-198:     "electron-builder": "^26.0.12",
-199:     "eslint": "^8.55.0",
-200:     "eslint-plugin-react-hooks": "^4.6.0",
-201:     "eslint-plugin-react-refresh": "^0.4.5",
-202:     "identity-obj-proxy": "^3.0.0",
-203:     "jest": "^29.7.0",
-204:     "jest-environment-jsdom": "^29.7.0",
-205:     "jsdom": "^26.0.0",
-206:     "ts-jest": "^29.2.6",
-207:     "ts-node": "^10.9.2",
-208:     "ts-prune": "^0.10.3",
-209:     "typescript": "^5.3.3",
-210:     "vite": "^5.0.8"
-211:   },
-212:   "dependencies": {
-213:     "class-variance-authority": "^0.7.1",
-214:     "clsx": "^2.1.1",
-215:     "dompurify": "^3.2.4",
-216:     "gpt-3-encoder": "^1.1.4",
-217:     "ignore": "^7.0.3",
-218:     "jsdom": "^26.0.0",
-219:     "lucide-react": "^0.477.0",
-220:     "micromatch": "^4.0.8",
-221:     "minimatch": "^10.0.1",
-222:     "prismjs": "^1.30.0",
-223:     "react": "^18.2.0",
-224:     "react-dom": "^18.2.0",
-225:     "react-simple-code-editor": "^0.14.1",
-226:     "sonner": "^2.0.3",
-227:     "tiktoken": "^1.0.20",
-228:     "tree-sitter": "^0.22.4",
-229:     "tree-sitter-css": "0.23.2",
-230:     "tree-sitter-html": "0.23.2",
-231:     "tree-sitter-javascript": "0.23.1",
-232:     "tree-sitter-python": "0.23.6",
-233:     "tree-sitter-typescript": "0.23.2"
-234:   },
-235:   "overrides": {
-236:     "esbuild": "^0.25.0",
-237:     "vite": {
-238:       "esbuild": "^0.25.0"
-239:     },
-240:     "@babel/helpers": "^7.26.10",
-241:     "tree-sitter": "^0.22.4",
-242:     "tree-sitter-html": {
-243:       "tree-sitter": "^0.22.4"
-244:     },
-245:     "tree-sitter-css": {
-246:       "tree-sitter": "^0.22.4"
-247:     },
-248:     "tree-sitter-javascript": {
-249:       "tree-sitter": "^0.22.4"
-250:     },
-251:     "tree-sitter-python": {
-252:       "tree-sitter": "^0.22.4"
-253:     },
-254:     "tree-sitter-typescript": {
-255:       "tree-sitter": "^0.22.4"
-256:     }
-257:   }
-258: }
+ 44:     "fix-module-deps": "node scripts/fix-module-deps.js",
+ 45:     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
+ 46:     "lint:strict": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+ 47:     "preview": "vite preview",
+ 48:     "test": "jest",
+ 49:     "test:watch": "jest --watch",
+ 50:     "test:coverage": "jest --coverage"
+ 51:   },
+ 52:   "keywords": [
+ 53:     "clipboard",
+ 54:     "code",
+ 55:     "developer-tools",
+ 56:     "electron",
+ 57:     "file-viewer"
+ 58:   ],
+ 59:   "author": {
+ 60:     "name": "flight505",
+ 61:     "email": "jesper_vang@me.com"
+ 62:   },
+ 63:   "license": "MIT",
+ 64:   "description": "A modern file viewer application for developers to easily navigate, search, and copy code from repositories.",
+ 65:   "build": {
+ 66:     "appId": "com.contextcraft.app",
+ 67:     "productName": "ContextCraft",
+ 68:     "directories": {
+ 69:       "output": "release-builds",
+ 70:       "buildResources": "build"
+ 71:     },
+ 72:     "files": [
+ 73:       "dist/**/*",
+ 74:       "electron/**/*",
+ 75:       "!node_modules/**",
+ 76:       "package.json"
+ 77:     ],
+ 78:     "extraResources": [
+ 79:       {
+ 80:         "from": "node_modules",
+ 81:         "to": "node_modules",
+ 82:         "filter": [
+ 83:           "minimatch/**",
+ 84:           "brace-expansion/**",
+ 85:           "balanced-match/**",
+ 86:           "ignore/**",
+ 87:           "micromatch/**",
+ 88:           "braces/**",
+ 89:           "fill-range/**",
+ 90:           "to-regex-range/**",
+ 91:           "is-number/**",
+ 92:           "picomatch/**",
+ 93:           "readdirp/**",
+ 94:           "tree-sitter/**/*",
+ 95:           "tree-sitter-javascript/**/*",
+ 96:           "tree-sitter-typescript/**/*",
+ 97:           "tree-sitter-python/**/*",
+ 98:           "tree-sitter-css/**/*",
+ 99:           "tree-sitter-html/**/*",
+100:           "jsdom/**",
+101:           "dompurify/**",
+102:           "tiktoken/**",
+103:           "gpt-3-encoder/**",
+104:           "node-gyp-build/**"
+105:         ]
+106:       }
+107:     ],
+108:     "afterSign": "scripts/notarize.js",
+109:     "mac": {
+110:       "category": "public.app-category.developer-tools",
+111:       "icon": "public/favicon.icns",
+112:       "target": [
+113:         "dmg",
+114:         "zip"
+115:       ],
+116:       "hardenedRuntime": true,
+117:       "gatekeeperAssess": false,
+118:       "entitlements": "build/entitlements.mac.plist",
+119:       "entitlementsInherit": "build/entitlements.mac.plist"
+120:     },
+121:     "win": {
+122:       "target": [
+123:         {
+124:           "target": "nsis",
+125:           "arch": [
+126:             "x64"
+127:           ]
+128:         },
+129:         {
+130:           "target": "portable",
+131:           "arch": [
+132:             "x64"
+133:           ]
+134:         }
+135:       ],
+136:       "icon": "public/favicon.ico",
+137:       "artifactName": "ContextCraft-${version}-${arch}-${name}.${ext}"
+138:     },
+139:     "nsis": {
+140:       "oneClick": true,
+141:       "perMachine": false,
+142:       "allowToChangeInstallationDirectory": false,
+143:       "deleteAppDataOnUninstall": true,
+144:       "artifactName": "ContextCraft-${version}-${arch}-setup.${ext}"
+145:     },
+146:     "portable": {
+147:       "artifactName": "ContextCraft-${version}-${arch}-portable.${ext}"
+148:     },
+149:     "linux": {
+150:       "target": [
+151:         "AppImage",
+152:         "deb",
+153:         "rpm"
+154:       ],
+155:       "category": "Development",
+156:       "icon": "public/favicon.png"
+157:     },
+158:     "asar": true,
+159:     "asarUnpack": [
+160:       "node_modules/tiktoken/**",
+161:       "node_modules/jsdom/**",
+162:       "node_modules/chokidar/**",
+163:       "node_modules/tree-sitter/**",
+164:       "node_modules/tree-sitter-javascript/**",
+165:       "node_modules/tree-sitter-typescript/**",
+166:       "node_modules/tree-sitter-python/**",
+167:       "node_modules/tree-sitter-css/**",
+168:       "node_modules/tree-sitter-html/**",
+169:       "node_modules/node-gyp-build/**",
+170:       "node_modules/nan/**"
+171:     ],
+172:     "publish": {
+173:       "provider": "github",
+174:       "releaseType": "draft"
+175:     }
+176:   },
+177:   "devDependencies": {
+178:     "@electron/notarize": "^3.0.1",
+179:     "@electron/rebuild": "^3.7.1",
+180:     "@testing-library/jest-dom": "^6.6.3",
+181:     "@testing-library/react": "^16.2.0",
+182:     "@types/css-modules": "^1.0.5",
+183:     "@types/electron": "^1.4.38",
+184:     "@types/jest": "^29.5.14",
+185:     "@types/jsdom": "^21.1.7",
+186:     "@types/node": "^20.10.5",
+187:     "@types/prismjs": "^1.26.5",
+188:     "@types/react": "^18.2.43",
+189:     "@types/react-dom": "^18.2.17",
+190:     "@typescript-eslint/eslint-plugin": "^6.14.0",
+191:     "@typescript-eslint/parser": "^6.14.0",
+192:     "@vitejs/plugin-react": "^4.2.1",
+193:     "chokidar": "^3.5.3",
+194:     "cross-env": "^7.0.3",
+195:     "dotenv": "^16.5.0",
+196:     "electron": "^34.3.0",
+197:     "electron-builder": "^26.0.12",
+198:     "eslint": "^8.55.0",
+199:     "eslint-plugin-react-hooks": "^4.6.0",
+200:     "eslint-plugin-react-refresh": "^0.4.5",
+201:     "identity-obj-proxy": "^3.0.0",
+202:     "jest": "^29.7.0",
+203:     "jest-environment-jsdom": "^29.7.0",
+204:     "jsdom": "^26.0.0",
+205:     "ts-jest": "^29.2.6",
+206:     "ts-node": "^10.9.2",
+207:     "ts-prune": "^0.10.3",
+208:     "typescript": "^5.3.3",
+209:     "vite": "^5.0.8"
+210:   },
+211:   "dependencies": {
+212:     "class-variance-authority": "^0.7.1",
+213:     "clsx": "^2.1.1",
+214:     "dompurify": "^3.2.4",
+215:     "gpt-3-encoder": "^1.1.4",
+216:     "ignore": "^7.0.3",
+217:     "jsdom": "^26.0.0",
+218:     "lucide-react": "^0.477.0",
+219:     "micromatch": "^4.0.8",
+220:     "minimatch": "^10.0.1",
+221:     "prismjs": "^1.30.0",
+222:     "react": "^18.2.0",
+223:     "react-dom": "^18.2.0",
+224:     "react-simple-code-editor": "^0.14.1",
+225:     "sonner": "^2.0.3",
+226:     "tiktoken": "^1.0.20",
+227:     "tree-sitter": "^0.22.4",
+228:     "tree-sitter-css": "0.23.2",
+229:     "tree-sitter-html": "0.23.2",
+230:     "tree-sitter-javascript": "0.23.1",
+231:     "tree-sitter-python": "0.23.6",
+232:     "tree-sitter-typescript": "0.23.2"
+233:   },
+234:   "overrides": {
+235:     "esbuild": "^0.25.0",
+236:     "vite": {
+237:       "esbuild": "^0.25.0"
+238:     },
+239:     "@babel/helpers": "^7.26.10",
+240:     "tree-sitter": "^0.22.4",
+241:     "tree-sitter-html": {
+242:       "tree-sitter": "^0.22.4"
+243:     },
+244:     "tree-sitter-css": {
+245:       "tree-sitter": "^0.22.4"
+246:     },
+247:     "tree-sitter-javascript": {
+248:       "tree-sitter": "^0.22.4"
+249:     },
+250:     "tree-sitter-python": {
+251:       "tree-sitter": "^0.22.4"
+252:     },
+253:     "tree-sitter-typescript": {
+254:       "tree-sitter": "^0.22.4"
+255:     }
+256:   }
+257: }
 
 
 

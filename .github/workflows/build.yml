@@ -181,7 +181,7 @@ jobs:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
           CXXFLAGS: ${{ env.CXXFLAGS }}
-          npm_config_cxx_std: "c++20"
+          NPM_CONFIG_CXX_STD: "c++20"
 
       - name: Verify and Patch Tree-Sitter Modules for C++20
         run: node scripts/verify-cpp20-bindings.js --patch --verbose
@@ -189,7 +189,7 @@ jobs:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
           CXXFLAGS: ${{ env.CXXFLAGS }}
-          npm_config_cxx_std: "c++20"
+          NPM_CONFIG_CXX_STD: "c++20"
 
       - name: Rebuild Native Modules for Electron
         # Ensure this script uses @electron/rebuild and inherits PYTHON, CXXFLAGS, GYP_MSVS_VERSION
@@ -198,7 +198,7 @@ jobs:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
           CXXFLAGS: ${{ env.CXXFLAGS }}
-          npm_config_cxx_std: "c++20"
+          NPM_CONFIG_CXX_STD: "c++20"
 
       - name: Build Frontend (Vite)
         run: npm run build
