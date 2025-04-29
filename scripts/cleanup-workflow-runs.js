@@ -168,7 +168,7 @@ try {
     for (const run of runsToDelete) {
       try {
         console.log(`  Deleting run ${run.id} from ${run.createdAt.toISOString()}`);
-        const result = execSync(`gh run delete ${run.id} --yes`, { encoding: 'utf8', stdio: 'pipe' });
+        const result = execSync(`gh run delete ${run.id}`, { encoding: 'utf8', stdio: 'pipe' });
         console.log(`  Successfully deleted run ${run.id}`);
         deletedCount++;
       } catch (error) {

@@ -4,13 +4,18 @@ name: Build and Release Electron App
 on:
   workflow_dispatch: # Allow manual triggering
   push:
-    branches: [ main ]
-    tags: [ 'v*' ] # Trigger on version tags like v1.0.0
+    branches: [main]
+    tags: ['v*'] # Trigger on version tags like v*.*.*
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+# Cancel redundant builds on PR pushes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # 1. Validate Code (Optional but Recommended)
+  # 1. Validate Code (Quick check on Ubuntu)
   validate:
     name: Validate Code (Lint & Build Frontend)
     runs-on: ubuntu-latest
@@ -21,42 +26,45 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # Match your project's Node version
+          node-version: 20
           cache: 'npm'
 
       - name: Install Dependencies (Ignoring Scripts)
-        # Ignore postinstall scripts here as we only care about linting/building TS/JS
         run: npm ci --ignore-scripts
         env:
           NPM_CONFIG_IGNORE_SCRIPTS: 'true'
 
       - name: Lint Code
-        run: npm run lint:strict # Use strict linting for CI
+        run: npm run lint:strict # Fail build on lint errors
 
       - name: Build Frontend (Vite)
-        run: npm run build # Assumes this is your 'vite build' script
+        run: npm run build # Assumes 'vite build'
+
+      - name: Upload Dist Artifact (Optional, if needed by build jobs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/
 
   # 2. Build macOS App
   build_macos:
     name: Build and Release macOS
-    needs: validate # Run after validation passes
-    # Only run full build/release on tag push or manual dispatch
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: macos-latest # Use the latest macOS runner
+    needs: validate
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
     env:
       # --- Build Flags ---
-      CXXFLAGS: --std=c++20 # Crucial for tree-sitter on macOS with clang
+      CXXFLAGS: --std=c++20
       # --- Signing & Notarization Secrets ---
-      # These MUST be configured in your GitHub repository secrets
-      CSC_LINK: ${{ secrets.CSC_LINK }}                   # Base64 encoded .p12 certificate file
-      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}   # Password for the certificate
-      APPLE_ID: ${{ secrets.APPLE_ID }}                   # Your Apple Developer ID email
-      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }} # App-specific password for notarization
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}         # Your Apple Developer Team ID
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       # --- Electron Builder Config ---
-      CSC_IDENTITY_AUTO_DISCOVERY: true # Let electron-builder find the cert name
+      CSC_IDENTITY_AUTO_DISCOVERY: true # Recommended over false unless specific issues
       # --- GitHub Token ---
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed for release creation
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout Code
@@ -68,63 +76,65 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Dependencies
-        # This will run postinstall scripts which might trigger native module builds
+      - name: Install Dependencies (includes postinstall rebuild attempts)
+        # Env flags should be inherited by node-gyp called via postinstall
         run: npm ci
 
-      - name: Rebuild Native Modules for Electron
-        # Ensure this script correctly uses @electron/rebuild and inherits CXXFLAGS
+      - name: Rebuild Native Modules Explicitly for Electron
+        # Ensure this script uses @electron/rebuild and inherits CXXFLAGS
         run: npm run rebuild-native-modules --verbose
 
+      - name: Download Dist Artifact (if validate uploads it)
+        # uses: actions/download-artifact@v4
+        # with:
+        #   name: dist-artifact
+        #   path: dist/
+      # OR Build Frontend Again
       - name: Build Frontend (Vite)
-        # Build again or ensure validate job artifacts are passed if needed
-        # Running again is simpler for now
         run: npm run build
 
       - name: Package macOS Application
-        # Run your dedicated mac build script which should call electron-builder
-        # Pass --verbose for more detailed logs from electron-builder
+        # mac-build.js should primarily call 'npx electron-builder --mac'
         run: node scripts/mac-build.js --verbose
 
       - name: List Build Output
         run: ls -lR release-builds
 
-      - name: Upload macOS Artifacts (for debugging/testing)
+      - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-build-${{ github.ref_name }}
           path: |
             release-builds/**/*.dmg
             release-builds/**/*.zip
-          if-no-files-found: warn # Don't fail if files aren't found
+          if-no-files-found: error
 
-      - name: Create GitHub Release and Upload Assets
-        # Only run this step when a version tag is pushed
+      - name: Create GitHub Release and Upload macOS Assets
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2 # Use v2 for better stability
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             release-builds/**/*.dmg
             release-builds/**/*.zip
-          draft: false # Publish immediately
-          prerelease: false # Mark as a full release
-          generate_release_notes: true # Automatically generate notes from commits
+          # Use tag name as release name
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true # Generate notes based on commits since last tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Inherited, but explicit is fine
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 3. Build Windows App
   build_windows:
     name: Build and Release Windows
-    needs: validate # Run after validation passes
-    # Only run full build/release on tag push or manual dispatch
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: windows-latest # Use the latest Windows runner
+    needs: validate
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
     env:
-      # --- Build Flags ---
-      # These are crucial for node-gyp on Windows with MSVC
-      CXXFLAGS: /std:c++20       # MSVC flag for C++20
-      GYP_MSVS_VERSION: 2022    # Explicitly tell node-gyp which VS version to use
-      # PYTHON: defined in steps # Explicit Python path
+      # --- Build Flags for node-gyp & MSVC ---
+      GYP_MSVS_VERSION: 2022 # Env var node-gyp uses directly
+      CXXFLAGS: /std:c++20    # MSVC flag for C++20
+      # PYTHON: Defined in steps # Explicit Python path needed by node-gyp
       # --- GitHub Token ---
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -141,71 +151,58 @@ jobs:
       - name: Set up Python for node-gyp
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # Recommended version for node-gyp
+          python-version: '3.11' # Use a specific, known-good version
 
-      - name: Set PYTHON Environment Variable # Required by node-gyp
+      - name: Set PYTHON Environment Variable for node-gyp
         run: echo "PYTHON=${{ env.pythonLocation }}\python.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
-      - name: Setup MSVC Developer Command Prompt
-        # Sets up the necessary paths and variables for MSVC
+      - name: Setup MSVC Developer Command Prompt environment
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64 # Target x64 builds
+          arch: x64
 
-      - name: Configure npm for Windows Build
-        # Explicitly tell npm/node-gyp which tools to use BEFORE install
+      - name: Configure npm for Windows Build (BEFORE Install)
+        # Set npm config keys that node-gyp might query
+        # *Avoid* setting CXXFLAGS via npm config
         run: |
-          # Configure npm to use C++20 for all native modules
-          npm config set npm_config_cxx_std=c++20
-          npm config set msvs_version=2022
-          npm config set node_gyp_force_unsupported_msvs_version=true
-          npm config set target_arch=x64
-          npm config set build_v8_with_gn=false
-          npm config set build_from_source=true
-          
-          # Environment variables are already set at the job level
-          # Just display diagnostic information
-          echo "---- Current npm config ----"
+          npm config set msvs_version 2022 --location=project
+          npm config set python "${{ env.PYTHON }}" --location=project
+          echo "---- Set npm config ----"
           npm config list -l
-          echo "---- Python Path ----"
+          echo "---- PYTHON env var ----"
           echo "${{ env.PYTHON }}"
-          echo "---- GYP MSVS Version ----"
+          echo "---- GYP_MSVS_VERSION env var ----"
           echo "${{ env.GYP_MSVS_VERSION }}"
         shell: bash
 
-      - name: Install Dependencies
-        # Pass env vars explicitly to ensure they are available to postinstall scripts
+      - name: Install Dependencies (includes postinstall rebuild attempts)
+        # Pass env vars explicitly to ensure they are available to node-gyp/rebuild during postinstall
         run: npm ci
         env:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
-          CXXFLAGS: ${{ env.CXXFLAGS }}
-          NPM_CONFIG_CXX_STD: "c++20"
+          CXXFLAGS: ${{ env.CXXFLAGS }} # Also pass CXXFLAGS for good measure
 
-      - name: Verify and Patch Tree-Sitter Modules for C++20
-        run: node scripts/verify-cpp20-bindings.js --patch --verbose
-        env:
-          PYTHON: ${{ env.PYTHON }}
-          GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
-          CXXFLAGS: ${{ env.CXXFLAGS }}
-          NPM_CONFIG_CXX_STD: "c++20"
-
-      - name: Rebuild Native Modules for Electron
-        # Ensure this script uses @electron/rebuild and inherits PYTHON, CXXFLAGS, GYP_MSVS_VERSION
+      - name: Rebuild Native Modules Explicitly for Electron
+        # Ensure rebuild script inherits the crucial env vars
         run: npm run rebuild-native-modules --verbose
         env:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
           CXXFLAGS: ${{ env.CXXFLAGS }}
-          NPM_CONFIG_CXX_STD: "c++20"
 
+      - name: Download Dist Artifact (if validate uploads it)
+        # uses: actions/download-artifact@v4
+        # with:
+        #   name: dist-artifact
+        #   path: dist/
+      # OR Build Frontend Again
       - name: Build Frontend (Vite)
         run: npm run build
 
       - name: Package Windows Application
-        # Run your dedicated windows build script
-        # Pass --verbose for more detailed logs from electron-builder
+        # Ensure windows-build.js passes env vars if it calls electron-builder
         run: node scripts/windows-build.js --verbose
         env:
           PYTHON: ${{ env.PYTHON }}
@@ -216,22 +213,21 @@ jobs:
         run: Get-ChildItem -Recurse release-builds | Select-Object FullName, Length | Format-Table -AutoSize
         shell: pwsh
 
-      - name: Upload Windows Artifacts (for debugging/testing)
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build-${{ github.ref_name }}
           path: release-builds/**/*.exe # Upload both setup and portable
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload Windows Assets to Existing Release
-        # Only run this step when a version tag is pushed
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: release-builds/**/*.exe # Upload both setup and portable
-          # Reuse the release created by the macOS job
+          files: release-builds/**/*.exe
+          # Ensure this uploads to the release created by the macOS job
           draft: false
           prerelease: false
-          generate_release_notes: false # Don't overwrite release notes
+          generate_release_notes: false # Prevent overwriting notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
