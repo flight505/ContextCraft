@@ -3,8 +3,35 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const url = require("url");
-const minimatch = require("minimatch");
 const { promisify } = require("util");
+// Import minimatch with resilience
+let minimatch;
+try {
+  minimatch = require("minimatch");
+  if (typeof minimatch !== 'function') {
+    // Handle case where minimatch is an object with a default export
+    minimatch = minimatch.default || minimatch.minimatch || minimatch;
+  }
+  console.log("Successfully loaded minimatch module");
+} catch (err) {
+  console.error("Failed to load minimatch module:", err);
+  // Simple fallback implementation 
+  minimatch = (path, pattern) => {
+    // Very basic wildcard matching
+    if (pattern.startsWith('**/') && pattern.endsWith('/**')) {
+      const middle = pattern.slice(3, -3);
+      return path.includes(middle);
+    } else if (pattern.startsWith('**/')) {
+      const end = pattern.slice(3);
+      return path.endsWith(end);
+    } else if (pattern.endsWith('/**')) {
+      const start = pattern.slice(0, -3);
+      return path.startsWith(start);
+    }
+    return path.includes(pattern);
+  };
+  console.log("Using fallback for minimatch module");
+}
 const micromatch = require('micromatch');
 const { networkInterfaces } = require('os');
 const childProcess = require('child_process');
@@ -2622,33 +2649,4 @@ function showModuleLoadingDiagnostics() {
   }
   
   console.log('====================================================');
-}
-
-// Load minimatch with resilience
-let minimatch;
-try {
-  minimatch = require('minimatch');
-  if (typeof minimatch !== 'function') {
-    // Handle case where minimatch is an object with a default export
-    minimatch = minimatch.default || minimatch.minimatch || minimatch;
-  }
-  console.log("Successfully loaded minimatch module");
-} catch (err) {
-  console.error("Failed to load minimatch module:", err);
-  // Simple fallback implementation 
-  minimatch = (path, pattern) => {
-    // Very basic wildcard matching
-    if (pattern.startsWith('**/') && pattern.endsWith('/**')) {
-      const middle = pattern.slice(3, -3);
-      return path.includes(middle);
-    } else if (pattern.startsWith('**/')) {
-      const end = pattern.slice(3);
-      return path.endsWith(end);
-    } else if (pattern.endsWith('/**')) {
-      const start = pattern.slice(0, -3);
-      return path.startsWith(start);
-    }
-    return path.includes(pattern);
-  };
-  console.log("Using fallback for minimatch module");
 }

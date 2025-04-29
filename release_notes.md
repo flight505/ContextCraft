@@ -1,3 +1,26 @@
+# ContextCraft v1.0.21
+
+This release fixes a critical bug with duplicate module declarations.
+
+## What's New
+
+### Bug Fixes
+- Fixed "Identifier 'minimatch' has already been declared" error that was causing application crashes
+- Consolidated module loading to prevent duplicate declarations
+- Improved module importing resilience
+
+### Technical Details
+- Removed duplicate minimatch variable declarations in main.js
+- Enhanced error handling for module loading
+- Ensured consistent module loading across environments
+
+## Compatibility
+- Windows: Fixed critical crash issue
+- macOS: Fixed critical crash issue
+- Linux: Fixed critical crash issue
+
+This release is strongly recommended for all users as it fixes a crash on application startup.
+
 # ContextCraft v1.0.20
 
 This release fixes module loading issues and improves build reliability.
