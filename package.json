@@ -157,17 +157,17 @@
     },
     "asar": true,
     "asarUnpack": [
-      "node_modules/tree-sitter/**/*",
-      "node_modules/tree-sitter-javascript/**/*",
-      "node_modules/tree-sitter-typescript/**/*",
-      "node_modules/tree-sitter-python/**/*",
-      "node_modules/tree-sitter-css/**/*",
-      "node_modules/tree-sitter-html/**/*",
-      "node_modules/tiktoken/**/*",
-      "node_modules/jsdom/**/*",
-      "node_modules/readdirp/**/*",
-      "node_modules/node-gyp-build/**/*",
-      "node_modules/nan/**/*"
+      "node_modules/tiktoken/**",
+      "node_modules/jsdom/**",
+      "node_modules/chokidar/**",
+      "node_modules/tree-sitter/**",
+      "node_modules/tree-sitter-javascript/**",
+      "node_modules/tree-sitter-typescript/**",
+      "node_modules/tree-sitter-python/**",
+      "node_modules/tree-sitter-css/**",
+      "node_modules/tree-sitter-html/**",
+      "node_modules/node-gyp-build/**",
+      "node_modules/nan/**"
     ],
     "publish": {
       "provider": "github",

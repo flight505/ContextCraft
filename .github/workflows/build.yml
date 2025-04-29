@@ -144,7 +144,7 @@ jobs:
           python-version: '3.11' # Recommended version for node-gyp
 
       - name: Set PYTHON Environment Variable # Required by node-gyp
-        run: echo "PYTHON=${{ env.pythonLocation }}\python.exe" >> $env:GITHUB_ENV
+        run: echo "PYTHON=${{ env.pythonLocation }}\python.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
       - name: Setup MSVC Developer Command Prompt
@@ -156,6 +156,14 @@ jobs:
       - name: Configure npm for Windows Build
         # Explicitly tell npm/node-gyp which tools to use BEFORE install
         run: |
+          # Configure npm to use C++20 for all native modules
+          npm config set npm_config_cxx_std=c++20
+          npm config set msvs_version=2022
+          npm config set node_gyp_force_unsupported_msvs_version=true
+          npm config set target_arch=x64
+          npm config set build_v8_with_gn=false
+          npm config set build_from_source=true
+          
           # Environment variables are already set at the job level
           # Just display diagnostic information
           echo "---- Current npm config ----"
@@ -168,11 +176,12 @@ jobs:
 
       - name: Install Dependencies
         # Pass env vars explicitly to ensure they are available to postinstall scripts
-        run: npm ci
+        run: npm ci --build-from-source --runtime=electron --target=34.5.3 --dist-url=https://electronjs.org/headers
         env:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
           CXXFLAGS: ${{ env.CXXFLAGS }}
+          npm_config_cxx_std: "c++20"
 
       - name: Rebuild Native Modules for Electron
         # Ensure this script uses @electron/rebuild and inherits PYTHON, CXXFLAGS, GYP_MSVS_VERSION
@@ -181,6 +190,7 @@ jobs:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
           CXXFLAGS: ${{ env.CXXFLAGS }}
+          npm_config_cxx_std: "c++20"
 
       - name: Build Frontend (Vite)
         run: npm run build
