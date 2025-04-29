@@ -1,6 +1,6 @@
 {
   "name": "contextcraft",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
