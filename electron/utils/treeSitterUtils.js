@@ -1,4 +1,6 @@
 const Parser = require('tree-sitter');
+const path = require('path');
+const fs = require('fs');
 
 // Use require for loading parsers in the main process
 let JavaScript = null;
@@ -7,34 +9,74 @@ let Python = null;
 let Css = null;
 let Html = null;
 
+// Helper function to safely load modules with detailed error logging
+function safeRequire(moduleName) {
+  try {
+    // Try standard require first
+    return require(moduleName);
+  } catch (e) {
+    if (e.code === 'MODULE_NOT_FOUND') {
+      console.warn(`Module not found: ${moduleName}. Error: ${e.message}`);
+      
+      // Try alternative resolution approaches
+      try {
+        // For packaged app in production, check if we're in an asar environment
+        if (process.resourcesPath) {
+          // Try to find the module in the unpacked directory
+          const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', moduleName);
+          if (fs.existsSync(unpackedPath)) {
+            console.log(`Found module at unpacked path: ${unpackedPath}`);
+            return require(unpackedPath);
+          }
+          
+          // Also try non-unpacked path
+          const normalPath = path.join(process.resourcesPath, 'app.asar', 'node_modules', moduleName);
+          if (fs.existsSync(normalPath)) {
+            console.log(`Found module at normal path: ${normalPath}`);
+            return require(normalPath);
+          }
+          
+          console.warn(`Could not find ${moduleName} in unpacked paths`);
+        }
+      } catch (alternativeError) {
+        console.error(`Alternative resolution failed for ${moduleName}:`, alternativeError);
+      }
+    } else {
+      console.error(`Error loading ${moduleName}:`, e);
+    }
+    return null;
+  }
+}
+
+// Load modules with the safer approach
 try {
-  JavaScript = require('tree-sitter-javascript');
+  JavaScript = safeRequire('tree-sitter-javascript');
 } catch (e) {
   console.warn("Failed to load tree-sitter-javascript parser", e);
 }
 
 try {
   // Note: tree-sitter-typescript exports multiple languages
-  const tsParser = require('tree-sitter-typescript');
-  TypeScript = tsParser.typescript; // Or tsx if needed primarily
+  const tsParser = safeRequire('tree-sitter-typescript');
+  TypeScript = tsParser?.typescript; // Use optional chaining
 } catch (e) {
   console.warn("Failed to load tree-sitter-typescript parser", e);
 }
 
 try {
-  Python = require('tree-sitter-python');
+  Python = safeRequire('tree-sitter-python');
 } catch (e) {
   console.warn("Failed to load tree-sitter-python parser", e);
 }
 
 try {
-  Css = require('tree-sitter-css');
+  Css = safeRequire('tree-sitter-css');
 } catch (e) {
   console.warn("Failed to load tree-sitter-css parser", e);
 }
 
 try {
-  Html = require('tree-sitter-html');
+  Html = safeRequire('tree-sitter-html');
 } catch (e) {
   console.warn("Failed to load tree-sitter-html parser", e);
 }

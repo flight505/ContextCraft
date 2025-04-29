@@ -50,6 +50,47 @@ function cleanupDirectory(directory) {
   log(`Created clean directory: ${directory}`);
 }
 
+// Debug function to test tree-sitter loading
+function testTreeSitterLoading() {
+  log('Testing tree-sitter module loading...');
+  const modules = [
+    'tree-sitter',
+    'tree-sitter-javascript',
+    'tree-sitter-typescript',
+    'tree-sitter-python',
+    'tree-sitter-css',
+    'tree-sitter-html'
+  ];
+  
+  for (const moduleName of modules) {
+    try {
+      log(`Trying to require ${moduleName}...`);
+      require(moduleName);
+      log(`✓ Successfully loaded ${moduleName}`);
+    } catch (err) {
+      log(`✗ Failed to load ${moduleName}: ${err.message}`);
+      
+      // Try to find the module in node_modules
+      const modulePath = path.join(process.cwd(), 'node_modules', moduleName);
+      if (fs.existsSync(modulePath)) {
+        log(`Module directory exists at: ${modulePath}`);
+        
+        // Check for package.json
+        const packageJsonPath = path.join(modulePath, 'package.json');
+        if (fs.existsSync(packageJsonPath)) {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          log(`Package version: ${packageJson.version}`);
+          log(`Main: ${packageJson.main}`);
+        } else {
+          log('No package.json found for module');
+        }
+      } else {
+        log(`Module directory not found at: ${modulePath}`);
+      }
+    }
+  }
+}
+
 // Check executable permissions and fix if needed
 function ensureExecutablePermissions(appPath) {
   log(`Ensuring executable permissions for: ${appPath}`);

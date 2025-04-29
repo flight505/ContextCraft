@@ -18,11 +18,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
       - run: npm install
       - run: npm run lint || true
-      - run: npm run build
+      - run: npm run build:ci
         env:
           CI: true
 
@@ -46,14 +46,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
         run: npm install
 
+      - name: Rebuild native modules with C++20
+        run: |
+          npm run rebuild-native-modules
+
       - name: Build Vite App
-        run: npm run build
+        run: npm run build:ci
         env:
           CI: true
 
@@ -107,7 +111,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -123,7 +127,7 @@ jobs:
           npm rebuild --build-from-source
 
       - name: Build Vite App
-        run: npm run build
+        run: npm run build:ci
         env:
           CI: true
 

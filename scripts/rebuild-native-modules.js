@@ -20,7 +20,11 @@ const nativeModules = [
   'tree-sitter-typescript',
   'tree-sitter-python',
   'tree-sitter-css',
-  'tree-sitter-html'
+  'tree-sitter-html',
+  'fsevents',
+  'minimatch',
+  'tiktoken',
+  'node-gyp-build'
 ];
 
 /**

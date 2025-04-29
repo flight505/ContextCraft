@@ -11,27 +11,36 @@ describe('GitHub Actions build.yml workflow', () => {
     workflow = yaml.load(content);
   });
 
-  test('should define validate and build_and_release jobs', () => {
+  test('should define validate, build_mac and build_windows jobs', () => {
     expect(workflow.jobs.validate).toBeDefined();
-    expect(workflow.jobs.build_and_release).toBeDefined();
+    expect(workflow.jobs.build_mac).toBeDefined();
+    expect(workflow.jobs.build_windows).toBeDefined();
   });
 
   test('validate job runs on ubuntu-latest', () => {
     expect(workflow.jobs.validate['runs-on']).toBe('ubuntu-latest');
   });
 
-  test('build_and_release matrix only includes macos-latest and windows-latest', () => {
-    const matrixOs = workflow.jobs.build_and_release.strategy.matrix.os;
-    expect(matrixOs).toEqual(['macos-latest', 'windows-latest']);
+  test('build_mac runs on macos-latest', () => {
+    expect(workflow.jobs.build_mac['runs-on']).toBe('macos-latest');
   });
 
-  test('build_and_release env includes CXXFLAGS set to --std=c++20', () => {
-    const env = workflow.jobs.build_and_release.env;
+  test('build_windows runs on windows-latest', () => {
+    expect(workflow.jobs.build_windows['runs-on']).toBe('windows-latest');
+  });
+
+  test('build_mac env includes CXXFLAGS set to --std=c++20', () => {
+    const env = workflow.jobs.build_mac.env;
     expect(env.CXXFLAGS).toBe('--std=c++20');
   });
 
+  test('build_windows env includes CXXFLAGS for Windows', () => {
+    const env = workflow.jobs.build_windows.env;
+    expect(env.CXXFLAGS).toBe('/std:c++20');
+  });
+
   test('release step should publish immediately (not draft)', () => {
-    const steps = workflow.jobs.build_and_release.steps;
+    const steps = workflow.jobs.build_mac.steps;
     const releaseStep = steps.find((step: any) => step.uses === 'softprops/action-gh-release@v1');
     expect(releaseStep).toBeDefined();
     expect(releaseStep.with.draft).toBe(false);

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, session, dialog, globalShortcut, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, globalShortcut, shell } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -6,38 +6,6 @@ const url = require("url");
 const minimatch = require("minimatch");
 const { promisify } = require("util");
 const micromatch = require('micromatch');
-const { networkInterfaces } = require('os');
-const childProcess = require('child_process');
-
-// Simplified module loading
-let chokidar;
-
-// No-op watcher creator function
-function createNoOpWatcher() {
-  console.log("Creating no-op file watcher as fallback");
-  return {
-    watch: () => ({
-      on: () => {},
-      close: () => {}
-    })
-  };
-}
-
-// Only attempt to load chokidar in development mode
-// In production, use the no-op watcher by default
-if (!app.isPackaged) {
-  try {
-    chokidar = require('chokidar');
-    console.log("Successfully loaded chokidar in development mode");
-  } catch (err) {
-    console.error(`Failed to load chokidar in development: ${err.message}`);
-    chokidar = createNoOpWatcher();
-  }
-} else {
-  // In production, don't attempt to load chokidar at all
-  console.log("Running in production mode - file watching disabled");
-  chokidar = createNoOpWatcher();
-}
 
 // Helper function to try resolving modules from multiple locations
 const tryLoadModule = (moduleName) => {
@@ -64,8 +32,33 @@ const tryLoadModule = (moduleName) => {
   throw new Error(`Could not load ${moduleName} from any location`);
 };
 
-// Show diagnostics to help debug module loading
-showModuleLoadingDiagnostics();
+// Add chokidar import for file watching
+let chokidar;
+// In production, use a no-op watcher to avoid the module loading error
+if (app.isPackaged) {
+  console.log("Using no-op file watcher in production");
+  chokidar = {
+    watch: () => ({
+      on: () => {},
+      close: () => {}
+    })
+  };
+} else {
+  // Only try to load chokidar in development
+  try {
+    chokidar = require('chokidar');
+    console.log("Successfully loaded chokidar for file watching");
+  } catch (err) {
+    console.warn("Chokidar not available:", err.message);
+    // Create a no-op watcher if chokidar is not available
+    chokidar = {
+      watch: () => ({
+        on: () => {},
+        close: () => {}
+      })
+    };
+  }
+}
 
 // Safely require DOMPurify and JSDOM with fallbacks for production
 let createDOMPurify, JSDOM, DOMPurify;
@@ -161,101 +154,6 @@ try {
 
 // For backward compatibility - use systemExclusions as the new single source of truth
 const DEFAULT_EXCLUSIONS = systemExclusions;
-
-// Function to show diagnostics about the environment to help debug module loading issues
-function showModuleLoadingDiagnostics() {
-  const os = require('os');
-  const { execSync } = require('child_process');
-
-  console.log('\n============= MODULE LOADING DIAGNOSTICS =============');
-  console.log(`App location: ${app.getAppPath()}`);
-  console.log(`Resources path: ${process.resourcesPath || 'Not available'}`);
-  console.log(`Executable path: ${app.getPath('exe')}`);
-  console.log(`Current directory: ${process.cwd()}`);
-  console.log(`Is packaged: ${app.isPackaged}`);
-  console.log(`Platform: ${process.platform}`);
-  console.log(`Architecture: ${process.arch}`);
-  console.log(`Node.js version: ${process.version}`);
-  console.log(`Electron version: ${process.versions.electron}`);
-  
-  // Check module resolution paths
-  console.log(`\nNode module paths:`);
-  try {
-    const modulePaths = module.paths;
-    modulePaths.forEach((p, i) => console.log(`  ${i+1}. ${p}`));
-  } catch (err) {
-    console.error(`Error getting module paths: ${err.message}`);
-  }
-  
-  // File system permissions check
-  console.log('\nFile system access checks:');
-  const pathsToCheck = [
-    process.resourcesPath,
-    process.cwd(),
-    app.getAppPath(),
-    path.join(process.resourcesPath, 'node_modules'),
-    path.join(process.resourcesPath, 'app.asar.unpacked'),
-    path.join(app.getAppPath(), 'node_modules')
-  ];
-  
-  pathsToCheck.forEach(p => {
-    if (!p) return;
-    try {
-      console.log(`Checking access to ${p}:`);
-      if (fs.existsSync(p)) {
-        console.log(`  ✓ Path exists`);
-        try {
-          const stats = fs.statSync(p);
-          console.log(`  ✓ Is directory: ${stats.isDirectory()}`);
-          if (stats.isDirectory()) {
-            try {
-              const items = fs.readdirSync(p);
-              console.log(`  ✓ Contains ${items.length} items`);
-              if (items.length <= 10) {
-                console.log(`    Contents: ${items.join(', ')}`);
-              } else {
-                console.log(`    First 10 items: ${items.slice(0, 10).join(', ')}...`);
-              }
-            } catch (err) {
-              console.log(`  ✗ Cannot read directory: ${err.message}`);
-            }
-          }
-        } catch (err) {
-          console.log(`  ✗ Cannot stat path: ${err.message}`);
-        }
-      } else {
-        console.log(`  ✗ Path does not exist`);
-      }
-    } catch (err) {
-      console.log(`  ✗ Error checking path: ${err.message}`);
-    }
-  });
-
-  // Environment variables (filter out sensitive ones)
-  console.log('\nRelevant environment variables:');
-  const safeEnvVars = ['PATH', 'NODE_PATH', 'ELECTRON_RUN_AS_NODE', 'ELECTRON_NO_ASAR'];
-  safeEnvVars.forEach(name => {
-    console.log(`  ${name}: ${process.env[name] || 'not set'}`);
-  });
-
-  // Network interfaces
-  console.log('\nNetwork information:');
-  try {
-    const networkInterfaces = os.networkInterfaces();
-    Object.keys(networkInterfaces).forEach(ifName => {
-      networkInterfaces[ifName].forEach(iface => {
-        // Filter out internal IP addresses and sensitive info
-        if (!iface.internal) {
-          console.log(`  Interface: ${ifName}, IP: ${iface.address}, Family: IPv${iface.family}`);
-        }
-      });
-    });
-  } catch (err) {
-    console.error(`Error getting network interfaces: ${err.message}`);
-  }
-
-  console.log('\n====================================================\n');
-}
 
 // Global variables for directory loading control
 let isLoadingDirectory = false;
@@ -1842,12 +1740,6 @@ function shouldExcludeByDefault(filePath, rootDir) {
     // If any pattern that would match this file is disabled, don't ignore it
     for (const pattern of allExcluded) {
       try {
-        // Skip minimatch check if we're using the fallback implementation
-        if (typeof minimatch !== 'function') {
-          console.debug(`Skipping minimatch check for pattern "${pattern}" - using fallback implementation`);
-          continue;
-        }
-        
         if (minimatch(relativePath, pattern)) {
           return false;
         }
@@ -2599,56 +2491,3 @@ ipcMain.handle("get-file-metadata", async (event, filePath) => {
     };
   }
 });
-
-// Add diagnostics function
-function showModuleLoadingDiagnostics() {
-  console.log('============= MODULE LOADING DIAGNOSTICS =============');
-  console.log(`App location: ${app.getAppPath()}`);
-  console.log(`Resources path: ${process.resourcesPath || 'Not available'}`);
-  console.log(`Executable path: ${app.getPath('exe')}`);
-  console.log(`Current directory: ${process.cwd()}`);
-  console.log(`Is packaged: ${app.isPackaged}`);
-  
-  // Try to list some directories to verify access
-  try {
-    if (process.resourcesPath) {
-      console.log(`Resources directory contents:`);
-      fs.readdirSync(process.resourcesPath).forEach(item => {
-        console.log(`  - ${item}`);
-      });
-    }
-  } catch (err) {
-    console.error(`Error reading resources directory: ${err.message}`);
-  }
-  
-  console.log('====================================================');
-}
-
-// Load minimatch with resilience
-let minimatch;
-try {
-  minimatch = require('minimatch');
-  if (typeof minimatch !== 'function') {
-    // Handle case where minimatch is an object with a default export
-    minimatch = minimatch.default || minimatch.minimatch || minimatch;
-  }
-  console.log("Successfully loaded minimatch module");
-} catch (err) {
-  console.error("Failed to load minimatch module:", err);
-  // Simple fallback implementation 
-  minimatch = (path, pattern) => {
-    // Very basic wildcard matching
-    if (pattern.startsWith('**/') && pattern.endsWith('/**')) {
-      const middle = pattern.slice(3, -3);
-      return path.includes(middle);
-    } else if (pattern.startsWith('**/')) {
-      const end = pattern.slice(3);
-      return path.endsWith(end);
-    } else if (pattern.endsWith('/**')) {
-      const start = pattern.slice(0, -3);
-      return path.startsWith(start);
-    }
-    return path.includes(pattern);
-  };
-  console.log("Using fallback for minimatch module");
-}
