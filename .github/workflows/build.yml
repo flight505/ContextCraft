@@ -1,288 +1,219 @@
-name: Build and Release
+# .github/workflows/build.yml
+name: Build and Release Electron App
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Allow manual triggering
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
+    tags: [ 'v*' ] # Trigger on version tags like v1.0.0
   pull_request:
     branches: [ main ]
 
 jobs:
+  # 1. Validate Code (Optional but Recommended)
   validate:
-    name: Validate Code
+    name: Validate Code (Lint & Build Frontend)
     runs-on: ubuntu-latest
-    env:
-      NPM_CONFIG_IGNORE_SCRIPTS: 'true'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-      - run: npm install
-      - run: npm run lint || true
-      - run: npm run build:ci
+          node-version: 20 # Match your project's Node version
+          cache: 'npm'
+
+      - name: Install Dependencies (Ignoring Scripts)
+        # Ignore postinstall scripts here as we only care about linting/building TS/JS
+        run: npm ci --ignore-scripts
         env:
-          CI: true
+          NPM_CONFIG_IGNORE_SCRIPTS: 'true'
 
-  test_native_modules:
-    name: Test Native Modules
-    needs: validate
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest]
-        node-version: [20]
-    env:
-      # Set correct C++20 flags for MSVC
-      CXX_FLAGS: "/std:c++20"
-      CXXFLAGS: "/std:c++20"
-      npm_config_msvs_version: "2022"
-      npm_config_node_gyp_force_unsupported_msvs_version: "true"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
-      
-      # Set up Python explicitly for node-gyp
-      - name: Set up Python for node-gyp
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      # Configure npm to use the correct Python path
-      - name: Configure npm to use Python
-        run: |
-          echo "PYTHON=${{ env.pythonLocation }}\python.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "npm_config_node_gyp=$env:APPDATA\npm\node_modules\npm\node_modules\node-gyp\bin\node-gyp.js" | Out-File -FilePath $env:GITHUB_ENV -Append
-        shell: pwsh
-      
-      - name: Install dependencies
-        run: npm install
-      
-      - name: Setup Visual Studio on Windows
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          toolset: 14.x
-      
-      - name: Verify binding.gyp files
-        run: node scripts/verify-cpp20-bindings.js --verbose
-        
-      - name: Patch binding.gyp files if needed
-        run: node scripts/verify-cpp20-bindings.js --patch --verbose
-      
-      - name: Test tree-sitter native module rebuild
-        run: |
-          echo "Testing tree-sitter rebuild with C++20..."
-          npm rebuild tree-sitter --verbose
-        
-      - name: Test other tree-sitter modules
-        run: |
-          echo "Testing other tree-sitter modules..."
-          npm rebuild tree-sitter-javascript tree-sitter-typescript tree-sitter-python tree-sitter-css tree-sitter-html --verbose
-      
-      - name: Capture node-gyp debug output
-        if: always()
-        run: |
-          echo "Node-gyp configuration:"
-          node -e "console.log('node-gyp version:', require('node-gyp/package.json').version)"
-          node -e "console.log('C++ flags:', process.env.CXXFLAGS, process.env.CXX_FLAGS)"
-          node -e "console.log('MSVC version:', process.env.npm_config_msvs_version)"
-        
-      - name: Upload binding.gyp files for analysis
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: binding-gyp-files
-          path: |
-            node_modules/tree-sitter/binding.gyp
-            node_modules/tree-sitter*/binding.gyp
-          if-no-files-found: warn
+      - name: Lint Code
+        run: npm run lint:strict # Use strict linting for CI
 
-      # New step: Verify and patch binding.gyp files
-      - name: Verify and patch binding.gyp files
-        run: node scripts/verify-cpp20-bindings.js --patch
+      - name: Build Frontend (Vite)
+        run: npm run build # Assumes this is your 'vite build' script
 
-      # Use our custom script to rebuild tree-sitter properly
-      - name: Rebuild tree-sitter with proper C++20 flags
-        run: |
-          node scripts/rebuild-tree-sitter-with-cpp20.js --verbose
-        shell: pwsh
-
-      # Rebuild remaining native modules
-      - name: Rebuild remaining native modules with C++20
-        run: |
-          npm run rebuild-native-modules
-        env:
-          SKIP_TREE_SITTER: "true"
-
-  build_mac:
-    name: Build macOS
-    needs: [validate, test_native_modules]
+  # 2. Build macOS App
+  build_macos:
+    name: Build and Release macOS
+    needs: validate # Run after validation passes
+    # Only run full build/release on tag push or manual dispatch
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: macos-latest
+    runs-on: macos-latest # Use the latest macOS runner
     env:
-      CXXFLAGS: --std=c++20
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CSC_LINK: ${{ secrets.CSC_LINK }}
-      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      CSC_IDENTITY_AUTO_DISCOVERY: true
-      CSC_PARALLEL_SIGNING: 'true'
-      CSC_NUM_THREADS: '4'
+      # --- Build Flags ---
+      CXXFLAGS: --std=c++20 # Crucial for tree-sitter on macOS with clang
+      # --- Signing & Notarization Secrets ---
+      # These MUST be configured in your GitHub repository secrets
+      CSC_LINK: ${{ secrets.CSC_LINK }}                   # Base64 encoded .p12 certificate file
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}   # Password for the certificate
+      APPLE_ID: ${{ secrets.APPLE_ID }}                   # Your Apple Developer ID email
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }} # App-specific password for notarization
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}         # Your Apple Developer Team ID
+      # --- Electron Builder Config ---
+      CSC_IDENTITY_AUTO_DISCOVERY: true # Let electron-builder find the cert name
+      # --- GitHub Token ---
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed for release creation
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install Dependencies
+        # This will run postinstall scripts which might trigger native module builds
+        run: npm ci
 
-      - name: Rebuild native modules with C++20
-        run: |
-          npm run rebuild-native-modules
+      - name: Rebuild Native Modules for Electron
+        # Ensure this script correctly uses @electron/rebuild and inherits CXXFLAGS
+        run: npm run rebuild-native-modules --verbose
 
-      - name: Build Vite App
-        run: npm run build:ci
-        env:
-          CI: true
+      - name: Build Frontend (Vite)
+        # Build again or ensure validate job artifacts are passed if needed
+        # Running again is simpler for now
+        run: npm run build
 
-      - name: Create release-builds directory
-        run: mkdir -p release-builds
-
-      - name: Package Application
-        run: npm run package:mac --verbose
+      - name: Package macOS Application
+        # Run your dedicated mac build script which should call electron-builder
+        # Pass --verbose for more detailed logs from electron-builder
+        run: node scripts/mac-build.js --verbose
 
       - name: List Build Output
-        run: |
-          echo "Artifacts:"  
-          ls -R release-builds || echo "No artifacts found"
+        run: ls -lR release-builds
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload macOS Artifacts (for debugging/testing)
+        uses: actions/upload-artifact@v4
         with:
-          name: macos-build
+          name: macos-build-${{ github.ref_name }}
           path: |
             release-builds/**/*.dmg
             release-builds/**/*.zip
-          if-no-files-found: warn
+          if-no-files-found: warn # Don't fail if files aren't found
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create GitHub Release and Upload Assets
+        # Only run this step when a version tag is pushed
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2 # Use v2 for better stability
         with:
           files: |
             release-builds/**/*.dmg
             release-builds/**/*.zip
-          draft: false
-          generate_release_notes: true
+          draft: false # Publish immediately
+          prerelease: false # Mark as a full release
+          generate_release_notes: true # Automatically generate notes from commits
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Inherited, but explicit is fine
 
-  build_win:
-    name: Windows build
-    needs: test_native_modules
-    runs-on: windows-latest
+  # 3. Build Windows App
+  build_windows:
+    name: Build and Release Windows
+    needs: validate # Run after validation passes
+    # Only run full build/release on tag push or manual dispatch
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest # Use the latest Windows runner
     env:
-      # Set correct C++20 flags for MSVC
-      CXX_FLAGS: "/std:c++20"
-      CXXFLAGS: "/std:c++20"
-      npm_config_msvs_version: "2022"
-      npm_config_node_gyp_force_unsupported_msvs_version: "true"
+      # --- Build Flags ---
+      # These are crucial for node-gyp on Windows with MSVC
+      CXXFLAGS: /std:c++20       # MSVC flag for C++20
+      GYP_MSVS_VERSION: 2022    # Explicitly tell node-gyp which VS version to use
+      # PYTHON: defined in steps # Explicit Python path
+      # --- GitHub Token ---
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          
-      # Set up Python explicitly for node-gyp
+          cache: 'npm'
+
       - name: Set up Python for node-gyp
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
-      # Configure npm to use the correct Python path
-      - name: Configure npm to use Python
-        run: |
-          echo "PYTHON=${{ env.pythonLocation }}\python.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "npm_config_node_gyp=$env:APPDATA\npm\node_modules\npm\node_modules\node-gyp\bin\node-gyp.js" | Out-File -FilePath $env:GITHUB_ENV -Append
+          python-version: '3.11' # Recommended version for node-gyp
+
+      - name: Set PYTHON Environment Variable # Required by node-gyp
+        run: echo "PYTHON=${{ env.pythonLocation }}\python.exe" >> $env:GITHUB_ENV
         shell: pwsh
-      
-      # Set up Visual Studio Developer Command Prompt environment
-      - name: Setup Visual Studio Developer Environment
+
+      - name: Setup MSVC Developer Command Prompt
+        # Sets up the necessary paths and variables for MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
-          toolset: 14.x
-      
-      - name: Install dependencies
+          arch: x64 # Target x64 builds
+
+      - name: Configure npm for Windows Build
+        # Explicitly tell npm/node-gyp which tools to use BEFORE install
+        run: |
+          npm config set msvs_version 2022 --location=project
+          npm config set python "${{ env.PYTHON }}" --location=project
+          echo "---- Current npm config ----"
+          npm config list -l
+          echo "---- Python Path ----"
+          echo "${{ env.PYTHON }}"
+          echo "---- GYP MSVS Version ----"
+          echo "${{ env.GYP_MSVS_VERSION }}"
+        shell: bash
+
+      - name: Install Dependencies
+        # Pass env vars explicitly to ensure they are available to postinstall scripts
         run: npm ci
         env:
-          npm_config_python: ${{ env.PYTHON }}
-      
-      - name: Verify and patch binding.gyp files
-        run: node scripts/verify-cpp20-bindings.js --patch
+          PYTHON: ${{ env.PYTHON }}
+          GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
+          CXXFLAGS: ${{ env.CXXFLAGS }}
 
-      # Use our custom script to rebuild tree-sitter properly
-      - name: Rebuild tree-sitter with proper C++20 flags
-        run: |
-          node scripts/rebuild-tree-sitter-with-cpp20.js --verbose
-        shell: pwsh
-
-      # Rebuild remaining native modules
-      - name: Rebuild remaining native modules with C++20
-        run: |
-          npm run rebuild-native-modules
+      - name: Rebuild Native Modules for Electron
+        # Ensure this script uses @electron/rebuild and inherits PYTHON, CXXFLAGS, GYP_MSVS_VERSION
+        run: npm run rebuild-native-modules --verbose
         env:
-          SKIP_TREE_SITTER: "true"
+          PYTHON: ${{ env.PYTHON }}
+          GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
+          CXXFLAGS: ${{ env.CXXFLAGS }}
 
-      - name: Build Vite App
-        run: npm run build:ci
+      - name: Build Frontend (Vite)
+        run: npm run build
+
+      - name: Package Windows Application
+        # Run your dedicated windows build script
+        # Pass --verbose for more detailed logs from electron-builder
+        run: node scripts/windows-build.js --verbose
         env:
-          CI: true
-
-      - name: Create release-builds directory
-        run: mkdir -Force release-builds
-        shell: pwsh
-
-      - name: Package Application
-        run: npm run package:win --verbose
+          PYTHON: ${{ env.PYTHON }}
+          GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
+          CXXFLAGS: ${{ env.CXXFLAGS }}
 
       - name: List Build Output
-        run: |
-          echo "Artifacts:"  
-          dir release-builds -Recurse || echo "No artifacts found"
+        run: Get-ChildItem -Recurse release-builds | Select-Object FullName, Length | Format-Table -AutoSize
         shell: pwsh
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Windows Artifacts (for debugging/testing)
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-build
-          path: release-builds/**/*.exe
+          name: windows-build-${{ github.ref_name }}
+          path: release-builds/**/*.exe # Upload both setup and portable
           if-no-files-found: warn
 
-      # For Windows, instead of creating separate releases, we'll upload to the same release
-      # that the macOS job creates, but we'll do it conditionally
-      - name: Wait for 30 seconds to ensure macOS job has created the release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: Start-Sleep -s 30
-        shell: pwsh
-        
-      - name: Upload Windows artifacts to existing release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload Windows Assets to Existing Release
+        # Only run this step when a version tag is pushed
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
         with:
-          files: release-builds/**/*.exe
+          files: release-builds/**/*.exe # Upload both setup and portable
+          # Reuse the release created by the macOS job
           draft: false
-          # Don't generate notes again - the macOS job already did this
-          generate_release_notes: false
+          prerelease: false
+          generate_release_notes: false # Don't overwrite release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
