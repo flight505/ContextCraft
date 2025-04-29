@@ -176,7 +176,15 @@ jobs:
 
       - name: Install Dependencies
         # Pass env vars explicitly to ensure they are available to postinstall scripts
-        run: npm ci --build-from-source --runtime=electron --target=34.5.3 --dist-url=https://electronjs.org/headers
+        run: npm ci
+        env:
+          PYTHON: ${{ env.PYTHON }}
+          GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
+          CXXFLAGS: ${{ env.CXXFLAGS }}
+          npm_config_cxx_std: "c++20"
+
+      - name: Verify and Patch Tree-Sitter Modules for C++20
+        run: node scripts/verify-cpp20-bindings.js --patch --verbose
         env:
           PYTHON: ${{ env.PYTHON }}
           GYP_MSVS_VERSION: ${{ env.GYP_MSVS_VERSION }}
