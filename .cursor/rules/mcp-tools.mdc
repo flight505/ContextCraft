@@ -5,15 +5,13 @@ alwaysApply: true
 ---
 You Must use the MCP Think Tank to extend your AI assistant with structured reasoning, persistent memory, task management, and web research capabilities. 
 
-## 🧠 Tool Categories & When To Use Them
-
-### 1️⃣ Thinking Tools
+### 1. Thinking Tools
 - `think` - Use for complex reasoning, architecture planning, and step-by-step problem-solving
   - **When to use**: For important decisions requiring structured analysis or reflection
   - **Pro tip**: Add `storeInMemory: true` to save important thoughts in the knowledge graph
   - **Example**: `think({structuredReasoning: "Analyzing pros/cons of database options...", storeInMemory: true})`
 
-### 2️⃣ Memory & Knowledge Graph
+### 2. Memory & Knowledge Graph
 - `create_entities` - Add new concepts to the knowledge graph
   - **When to use**: To document important concepts, systems, or components
   - **Example**: `create_entities([{name: "AuthSystem", entityType: "System", observations: ["Uses JWT"]}])`
@@ -57,7 +55,7 @@ You Must use the MCP Think Tank to extend your AI assistant with structured reas
   - **When to use**: When connections are no longer valid
   - **Example**: `delete_relations([{from: "AuthSystem", to: "Legacy", relationType: "depends on"}])`
 
-### 3️⃣ Task Management
+### 3. Task Management
 - `plan_tasks` - Create and organize project tasks
   - **When to use**: At project start or when planning new features
   - **Example**: `plan_tasks([{description: "Implement login", priority: "high"}])`
@@ -82,7 +80,7 @@ You Must use the MCP Think Tank to extend your AI assistant with structured reas
   - **When to use**: For debugging or when examining stored knowledge directly
   - **Example**: `show_memory_path({random_string: ""})`
 
-### When user mentions "Research"
+### 4. When user mentions "Research"
 When the user mentions research, use the following four tools. 
 - `exa_search` - Search the web for information
   - **When to use**: When current context is insufficient and you need external facts
@@ -102,7 +100,7 @@ Parameters:
 'vercel/nextjs') retrieved from 'resolve-library-id'.
 • topic: Topic to focus documentation on (e.g., 'hooks', 'routing").
 
-## 📋 Best Practices
+## Best Practices
 
 ### Thinking Process
 - Use the `think` tool for all complex decisions to ensure thorough analysis
@@ -127,5 +125,5 @@ Parameters:
 - Save important findings to the knowledge graph
 - Combine research with structured thinking for best results
 
-## 📝 How To Save Important Thoughts
+## How To Save Important Thoughts
 When using the `think` tool with important reasoning, set `storeInMemory: true` or simply tell the agent "Please save this reasoning in memory for future reference."

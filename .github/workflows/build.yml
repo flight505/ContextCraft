@@ -57,9 +57,8 @@ jobs:
       # Configure npm to use the correct Python path
       - name: Configure npm to use Python
         run: |
-          echo "PYTHON=${{ env.pythonLocation }}\python.exe" >> $env:GITHUB_ENV
-          echo "npm_config_node_gyp=$env:APPDATA\npm\node_modules\npm\node_modules\node-gyp\bin\node-gyp.js" >> $env:GITHUB_ENV
-          echo "Using Python at: ${{ env.pythonLocation }}\python.exe"
+          echo "PYTHON=${{ env.pythonLocation }}\python.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "npm_config_node_gyp=$env:APPDATA\npm\node_modules\npm\node_modules\node-gyp\bin\node-gyp.js" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
       
       - name: Install dependencies
@@ -104,6 +103,23 @@ jobs:
             node_modules/tree-sitter/binding.gyp
             node_modules/tree-sitter*/binding.gyp
           if-no-files-found: warn
+
+      # New step: Verify and patch binding.gyp files
+      - name: Verify and patch binding.gyp files
+        run: node scripts/verify-cpp20-bindings.js --patch
+
+      # Use our custom script to rebuild tree-sitter properly
+      - name: Rebuild tree-sitter with proper C++20 flags
+        run: |
+          node scripts/rebuild-tree-sitter-with-cpp20.js --verbose
+        shell: pwsh
+
+      # Rebuild remaining native modules
+      - name: Rebuild remaining native modules with C++20
+        run: |
+          npm run rebuild-native-modules
+        env:
+          SKIP_TREE_SITTER: "true"
 
   build_mac:
     name: Build macOS
@@ -216,9 +232,18 @@ jobs:
       - name: Verify and patch binding.gyp files
         run: node scripts/verify-cpp20-bindings.js --patch
 
-      - name: Rebuild native modules with C++20
+      # Use our custom script to rebuild tree-sitter properly
+      - name: Rebuild tree-sitter with proper C++20 flags
+        run: |
+          node scripts/rebuild-tree-sitter-with-cpp20.js --verbose
+        shell: pwsh
+
+      # Rebuild remaining native modules
+      - name: Rebuild remaining native modules with C++20
         run: |
           npm run rebuild-native-modules
+        env:
+          SKIP_TREE_SITTER: "true"
 
       - name: Build Vite App
         run: npm run build:ci

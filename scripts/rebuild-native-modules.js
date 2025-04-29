@@ -27,6 +27,16 @@ const nativeModules = [
   'node-gyp-build'
 ];
 
+// Filter out tree-sitter modules if SKIP_TREE_SITTER is set
+const shouldSkipTreeSitter = process.env.SKIP_TREE_SITTER === 'true';
+const modulesToRebuild = shouldSkipTreeSitter 
+  ? nativeModules.filter(mod => !mod.includes('tree-sitter'))
+  : nativeModules;
+
+if (shouldSkipTreeSitter) {
+  console.log('🔔 Skipping tree-sitter modules as they were already rebuilt separately');
+}
+
 /**
  * Reads configuration from multiple sources with priority:
  * 1. Environment variables (highest priority)
@@ -296,7 +306,7 @@ async function main() {
       console.log('⚠️ electron-rebuild not found, attempting manual rebuild...');
       
       // Manually rebuild each native module using npm rebuild
-      for (const module of nativeModules) {
+      for (const module of modulesToRebuild) {
         console.log(`🔨 Rebuilding ${module}...`);
         try {
           execSync(`npm rebuild ${module} --update-binary`, { stdio: 'inherit', env });
