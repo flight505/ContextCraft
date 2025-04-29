@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const os = require('os');
 
 console.log('🔍 Starting module dependency fixer...');
 
@@ -62,9 +63,17 @@ console.log('🔍 Verifying modules in node_modules...');
 const missingModules = [];
 modulesToCopy.forEach(moduleName => {
   const modulePath = path.join(nodeModulesPath, moduleName);
+  
   if (!fs.existsSync(modulePath)) {
-    missingModules.push(moduleName);
-    console.warn(`⚠️ Module ${moduleName} not found in node_modules`);
+    // Skip fsevents on non-macOS platforms
+    if (moduleName === 'fsevents' && os.platform() !== 'darwin') {
+      console.log(`⚠️ Module ${moduleName} is skipped (macOS-only dependency)`);
+    } else {
+      console.log(`⚠️ Module ${moduleName} not found in node_modules`);
+      missingModules.push(moduleName);
+    }
+  } else {
+    console.log(`✅ Copied ${moduleName} to all locations`);
   }
 });
 
@@ -137,7 +146,11 @@ console.log('\n🔍 Verifying modules in destination directories...');
     if (fs.existsSync(modulePath)) {
       console.log(`  ✅ ${moduleName} - exists`);
     } else {
-      console.warn(`  ❌ ${moduleName} - missing`);
+      if (moduleName === 'fsevents' && os.platform() !== 'darwin') {
+        console.log(`  ⚠️ ${moduleName} - skipped (macOS-only)`);
+      } else {
+        console.warn(`  ❌ ${moduleName} - missing`);
+      }
     }
   });
 });
