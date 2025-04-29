@@ -156,7 +156,7 @@ jobs:
       - name: Configure npm for Windows Build
         # Explicitly tell npm/node-gyp which tools to use BEFORE install
         run: |
-          npm config set msvs_version 2022 --location=project
+          export npm_config_msvs_version=2022
           npm config set python "${{ env.PYTHON }}" --location=project
           echo "---- Current npm config ----"
           npm config list -l
